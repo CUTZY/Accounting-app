@@ -8,6 +8,10 @@ class AccountingApp {
         this.nextEntryId = parseInt(localStorage.getItem('gl_next_entry_id')) || 1;
         this.nextAccountId = parseInt(localStorage.getItem('gl_next_account_id')) || 1;
         
+        // Initialize edit mode variables
+        this.accountEditMode = false;
+        this.editingAccountId = null;
+        
         this.initializeApp();
     }
 
@@ -20,10 +24,21 @@ class AccountingApp {
             entryDateElement.value = today;
         }
         
+        // Set up modal event listeners
+        this.setupModalEventListeners();
+        
         // Load the dashboard
         this.loadDashboard();
         this.loadAccountsList();
         this.loadJournalEntries();
+    }
+
+    // Setup event listeners for modals
+    setupModalEventListeners() {
+        // Reset account modal when closed
+        $('#addAccountModal').on('hidden.bs.modal', () => {
+            this.resetAccountModal();
+        });
     }
 
     // Reset app with fresh demo data
@@ -615,6 +630,14 @@ class AccountingApp {
 
     // Account management functions
     showAddAccountModal() {
+        // Set modal to add mode
+        this.accountEditMode = false;
+        this.editingAccountId = null;
+        
+        // Update modal title and button
+        document.querySelector('#addAccountModal .modal-title').textContent = 'Add New Account';
+        document.querySelector('#addAccountModal .btn-primary').textContent = 'Add Account';
+        
         // Generate next account number
         const accountNumber = this.generateAccountNumber();
         document.getElementById('accountNumber').value = accountNumber;
@@ -625,6 +648,42 @@ class AccountingApp {
         document.getElementById('accountDescription').value = '';
         
         $('#addAccountModal').modal('show');
+    }
+
+    // Edit existing account
+    editAccount(accountId) {
+        // Find the account to edit
+        const account = this.accounts.find(acc => acc.id === accountId);
+        if (!account) {
+            alert('Account not found');
+            return;
+        }
+
+        // Set modal to edit mode
+        this.accountEditMode = true;
+        this.editingAccountId = accountId;
+        
+        // Update modal title and button
+        document.querySelector('#addAccountModal .modal-title').textContent = 'Edit Account';
+        document.querySelector('#addAccountModal .btn-primary').textContent = 'Update Account';
+        
+        // Populate form with existing account data
+        document.getElementById('accountNumber').value = account.number;
+        document.getElementById('accountName').value = account.name;
+        document.getElementById('accountType').value = account.type;
+        document.getElementById('accountDescription').value = account.description || '';
+        
+        $('#addAccountModal').modal('show');
+    }
+
+    // Reset account modal to default state
+    resetAccountModal() {
+        this.accountEditMode = false;
+        this.editingAccountId = null;
+        
+        // Reset modal title and button text
+        document.querySelector('#addAccountModal .modal-title').textContent = 'Add New Account';
+        document.querySelector('#addAccountModal .btn-primary').textContent = 'Add Account';
     }
 
     generateAccountNumber() {
@@ -651,21 +710,42 @@ class AccountingApp {
             return;
         }
 
-        // Check for duplicate account numbers
-        if (this.accounts.some(acc => acc.number === number)) {
+        // Check for duplicate account numbers (skip current account when editing)
+        const duplicateAccount = this.accounts.find(acc => acc.number === number);
+        if (duplicateAccount && (!this.accountEditMode || duplicateAccount.id !== this.editingAccountId)) {
             alert('Account number already exists');
             return;
         }
 
-        const newAccount = {
-            id: this.nextAccountId++,
-            number: number,
-            name: name,
-            type: type,
-            description: description
-        };
+        if (this.accountEditMode && this.editingAccountId) {
+            // Update existing account
+            const accountIndex = this.accounts.findIndex(acc => acc.id === this.editingAccountId);
+            if (accountIndex !== -1) {
+                this.accounts[accountIndex] = {
+                    ...this.accounts[accountIndex],
+                    number: number,
+                    name: name,
+                    type: type,
+                    description: description
+                };
+                
+                this.showNotification('Account updated successfully!', 'success');
+            }
+        } else {
+            // Add new account
+            const newAccount = {
+                id: this.nextAccountId++,
+                number: number,
+                name: name,
+                type: type,
+                description: description
+            };
 
-        this.accounts.push(newAccount);
+            this.accounts.push(newAccount);
+            this.showNotification('Account added successfully!', 'success');
+        }
+
+        // Sort accounts and save
         this.accounts.sort((a, b) => a.number.localeCompare(b.number));
         this.saveData();
         
@@ -673,8 +753,9 @@ class AccountingApp {
         this.loadAccountsList();
         this.updateAccountSelects();
         
-        // Show success message
-        this.showNotification('Account added successfully!', 'success');
+        // Reset edit mode
+        this.accountEditMode = false;
+        this.editingAccountId = null;
     }
 
     loadAccountsList() {
