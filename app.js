@@ -11,6 +11,8 @@ class AccountingApp {
         // Initialize edit mode variables
         this.accountEditMode = false;
         this.editingAccountId = null;
+        this.entryEditMode = false;
+        this.editingEntryId = null;
         
         this.initializeApp();
     }
@@ -38,6 +40,11 @@ class AccountingApp {
         // Reset account modal when closed
         $('#addAccountModal').on('hidden.bs.modal', () => {
             this.resetAccountModal();
+        });
+        
+        // Reset journal entry modal when closed
+        $('#addEntryModal').on('hidden.bs.modal', () => {
+            this.resetEntryModal();
         });
     }
 
@@ -820,6 +827,14 @@ class AccountingApp {
 
     // Journal Entry functions
     showAddEntryModal() {
+        // Set modal to add mode
+        this.entryEditMode = false;
+        this.editingEntryId = null;
+        
+        // Update modal title and button
+        document.querySelector('#addEntryModal .modal-title').textContent = 'New Journal Entry';
+        document.querySelector('#addEntryModal .btn-primary').textContent = 'Save Entry';
+        
         // Clear form
         const entryDateElement = document.getElementById('entryDate');
         const entryReferenceElement = document.getElementById('entryReference');
@@ -845,6 +860,68 @@ class AccountingApp {
         this.updateTotals();
         
         $('#addEntryModal').modal('show');
+    }
+
+    // Edit existing journal entry
+    editJournalEntry(entryId) {
+        // Find the journal entry to edit
+        const entry = this.journalEntries.find(ent => ent.id === entryId);
+        if (!entry) {
+            alert('Journal entry not found');
+            return;
+        }
+
+        // Set modal to edit mode
+        this.entryEditMode = true;
+        this.editingEntryId = entryId;
+        
+        // Update modal title and button
+        document.querySelector('#addEntryModal .modal-title').textContent = 'Edit Journal Entry';
+        document.querySelector('#addEntryModal .btn-primary').textContent = 'Update Entry';
+        
+        // Populate form with existing entry data
+        document.getElementById('entryDate').value = entry.date;
+        document.getElementById('entryReference').value = entry.reference || '';
+        document.getElementById('entryDescription').value = entry.description;
+        
+        // Clear existing transaction lines and create new ones
+        const container = document.getElementById('transaction-lines');
+        container.innerHTML = '';
+        
+        // Add transaction lines with existing data
+        entry.transactions.forEach((transaction, index) => {
+            if (index === 0) {
+                // For first line, create with existing data
+                container.innerHTML = this.createTransactionLine();
+                const firstLine = container.querySelector('.transaction-line');
+                firstLine.querySelector('.account-select').value = transaction.accountId;
+                firstLine.querySelector('.debit-amount').value = transaction.debit || '';
+                firstLine.querySelector('.credit-amount').value = transaction.credit || '';
+            } else {
+                // For additional lines, add new ones
+                container.insertAdjacentHTML('beforeend', this.createTransactionLine());
+                const newLine = container.lastElementChild;
+                newLine.querySelector('.account-select').value = transaction.accountId;
+                newLine.querySelector('.debit-amount').value = transaction.debit || '';
+                newLine.querySelector('.credit-amount').value = transaction.credit || '';
+            }
+        });
+        
+        // Update account selects and totals
+        this.updateAccountSelects();
+        this.updateTotals();
+        
+        $('#addEntryModal').modal('show');
+    }
+
+    // Reset journal entry modal to default state
+    resetEntryModal() {
+        this.entryEditMode = false;
+        this.editingEntryId = null;
+        
+        // Reset modal title and button text
+        document.querySelector('#addEntryModal .modal-title').textContent = 'New Journal Entry';
+        document.querySelector('#addEntryModal .btn-primary').textContent = 'Save Entry';
     }
 
     createTransactionLine() {
@@ -988,22 +1065,45 @@ class AccountingApp {
             alert('At least two transaction lines are required');
             return;
         }
+
+        if (this.entryEditMode && this.editingEntryId) {
+            // Update existing journal entry
+            const entryIndex = this.journalEntries.findIndex(entry => entry.id === this.editingEntryId);
+            if (entryIndex !== -1) {
+                this.journalEntries[entryIndex] = {
+                    ...this.journalEntries[entryIndex],
+                    date: date,
+                    reference: reference,
+                    description: description,
+                    transactions: transactions,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                this.showNotification('Journal entry updated successfully!', 'success');
+            }
+        } else {
+            // Add new journal entry
+            const entry = {
+                id: this.nextEntryId++,
+                date: date,
+                reference: reference,
+                description: description,
+                transactions: transactions,
+                createdAt: new Date().toISOString()
+            };
+
+            this.journalEntries.push(entry);
+            this.showNotification('Journal entry added successfully!', 'success');
+        }
         
-        const entry = {
-            id: this.nextEntryId++,
-            date: date,
-            reference: reference,
-            description: description,
-            transactions: transactions,
-            createdAt: new Date().toISOString()
-        };
-        
-        this.journalEntries.push(entry);
         this.saveData();
         
         $('#addEntryModal').modal('hide');
         this.loadJournalEntries();
-        this.showNotification('Journal entry added successfully!', 'success');
+        
+        // Reset edit mode
+        this.entryEditMode = false;
+        this.editingEntryId = null;
         
         // Refresh dashboard if visible
         if (document.getElementById('dashboard').style.display !== 'none') {
@@ -1052,9 +1152,14 @@ class AccountingApp {
                         <td class="text-right">${transaction.debit > 0 ? this.formatCurrency(transaction.debit) : ''}</td>
                         <td class="text-right">${transaction.credit > 0 ? this.formatCurrency(transaction.credit) : ''}</td>
                         <td>${isFirstRow ? `
-                            <button class="btn btn-sm btn-outline-danger" onclick="app.deleteJournalEntry(${entry.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editJournalEntry(${entry.id})" title="Edit Entry">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="app.deleteJournalEntry(${entry.id})" title="Delete Entry">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         ` : ''}</td>
                     </tr>
                 `;
@@ -1429,6 +1534,10 @@ function generateBalanceSheet() {
 
 function generateIncomeStatement() {
     app.generateIncomeStatement();
+}
+
+function editJournalEntry(entryId) {
+    app.editJournalEntry(entryId);
 }
 
 // Initialize the app when the page loads
