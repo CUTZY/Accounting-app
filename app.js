@@ -3,31 +3,16 @@
 
 class AccountingApp {
     constructor() {
-        // Check if this is the first time loading the app
-        const isFirstLoad = !localStorage.getItem('gl_accounts');
-        
         this.accounts = JSON.parse(localStorage.getItem('gl_accounts')) || [];
         this.journalEntries = JSON.parse(localStorage.getItem('gl_journal_entries')) || [];
         this.nextEntryId = parseInt(localStorage.getItem('gl_next_entry_id')) || 1;
         this.nextAccountId = parseInt(localStorage.getItem('gl_next_account_id')) || 1;
-        
-        // If first load, automatically load demo data
-        if (isFirstLoad) {
-            setTimeout(() => {
-                this.loadDemoData();
-            }, 500); // Small delay to ensure DOM is ready
-        }
         
         this.initializeApp();
     }
 
     // Initialize the application
     initializeApp() {
-        // Load initial data if empty
-        if (this.accounts.length === 0) {
-            this.loadDefaultAccounts();
-        }
-        
         // Set today's date as default (only if element exists)
         const entryDateElement = document.getElementById('entryDate');
         if (entryDateElement) {
@@ -548,7 +533,15 @@ class AccountingApp {
         const recentEntries = this.journalEntries.slice(-5).reverse();
         
         if (recentEntries.length === 0) {
-            recentContainer.innerHTML = '<p class="text-muted text-center">No recent entries found</p>';
+            recentContainer.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-2">No recent entries</p>
+                    <button class="btn btn-primary btn-sm" onclick="app.loadDemoData()">
+                        <i class="fas fa-database"></i> Load Demo Data
+                    </button>
+                </div>
+            `;
             return;
         }
 
@@ -570,6 +563,19 @@ class AccountingApp {
 
     checkAccountAlerts() {
         const alertsContainer = document.getElementById('account-alerts');
+        
+        // Check if there are no accounts
+        if (this.accounts.length === 0) {
+            alertsContainer.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-2">No accounts to monitor</p>
+                    <small class="text-muted">Load demo data to see account alerts</small>
+                </div>
+            `;
+            return;
+        }
+        
         const balances = this.calculateAccountBalances();
         
         // Check for any obvious issues
@@ -673,8 +679,28 @@ class AccountingApp {
 
     loadAccountsList() {
         const container = document.getElementById('accounts-list');
-        const accountTypes = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
         
+        // Check if there are no accounts
+        if (this.accounts.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-list fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Chart of Accounts Found</h5>
+                    <p class="text-muted">Get started by loading demo data or adding your first account.</p>
+                    <div class="mt-3">
+                        <button class="btn btn-primary me-2" onclick="app.loadDemoData()">
+                            <i class="fas fa-database"></i> Load Demo Data
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="showAddAccountModal()">
+                            <i class="fas fa-plus"></i> Add First Account
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        const accountTypes = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense'];
         let html = '';
         
         accountTypes.forEach(type => {
@@ -908,7 +934,25 @@ class AccountingApp {
         const tbody = document.getElementById('journal-entries-table');
         
         if (this.journalEntries.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No journal entries found</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div>
+                            <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No Journal Entries Found</h6>
+                            <p class="text-muted small">Start by loading demo data or creating your first journal entry.</p>
+                            <div class="mt-3">
+                                <button class="btn btn-primary btn-sm me-2" onclick="app.loadDemoData()">
+                                    <i class="fas fa-database"></i> Load Demo Data
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="showAddEntryModal()" ${this.accounts.length === 0 ? 'disabled title="Add accounts first"' : ''}>
+                                    <i class="fas fa-plus"></i> Add Entry
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
         

@@ -63,20 +63,25 @@ A comprehensive web-based general ledger accounting application built with HTML,
 ### Installation
 1. Download or clone the project files
 2. Open `index.html` in your web browser
-3. The application will automatically load with restaurant demo data
+3. The application starts empty - ready for your data
 4. Use the data management buttons:
-   - **"Demo Data"** - Load fresh restaurant demo data
+   - **"Demo Data"** - Load realistic restaurant demo data to explore features
    - **"Clear Data"** - Remove all data and start completely fresh
 
 ## How to Use
 
-### 1. Initial Setup
-When you first open the application, it will automatically create a standard chart of accounts including:
-- **Assets**: Cash, Accounts Receivable, Inventory, Equipment
-- **Liabilities**: Accounts Payable, Notes Payable
-- **Equity**: Owner's Equity, Retained Earnings
-- **Revenue**: Sales Revenue, Service Revenue
-- **Expenses**: Cost of Goods Sold, Rent, Utilities, Office Supplies
+### 1. Getting Started
+When you first open the application, you have two options:
+
+**Option A: Explore with Demo Data**
+- Click **"Demo Data"** to load a complete restaurant business example
+- Includes 27 accounts and 20 realistic transactions
+- Perfect for learning and exploring features
+
+**Option B: Start Fresh**
+- Click **"Add Account"** to create your first account
+- Build your chart of accounts from scratch
+- Perfect for your actual business
 
 ### 2. Adding Accounts
 1. Navigate to **Chart of Accounts**
