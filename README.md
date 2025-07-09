@@ -1,4 +1,4 @@
-# Fung's Accounting
+# Fung's Acct
 
 A comprehensive web-based general ledger accounting application built with HTML, CSS, and JavaScript. This application implements double-entry bookkeeping principles and provides all essential accounting features for small to medium businesses.
 
