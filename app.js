@@ -119,6 +119,9 @@ class AccountingApp {
             case 'income-statement':
                 this.generateIncomeStatement();
                 break;
+            case 'about':
+                // About page is static, no dynamic loading needed
+                break;
         }
     }
 

@@ -455,6 +455,105 @@
           padding: 4px 8px;
         }
       }
+
+      /* About page specific styles */
+      .about-avatar {
+        animation: fadeInUp 0.8s ease-in-out;
+      }
+
+      .border-left-primary {
+        border-left: 4px solid #007bff !important;
+        box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+        transition: all 0.3s ease;
+      }
+
+      .border-left-success {
+        border-left: 4px solid #28a745 !important;
+        box-shadow: 0 2px 8px rgba(40,167,69,0.1);
+        transition: all 0.3s ease;
+      }
+
+      .border-left-info {
+        border-left: 4px solid #17a2b8 !important;
+        box-shadow: 0 2px 8px rgba(23,162,184,0.1);
+        transition: all 0.3s ease;
+      }
+
+      .border-left-warning {
+        border-left: 4px solid #ffc107 !important;
+        box-shadow: 0 2px 8px rgba(255,193,7,0.1);
+        transition: all 0.3s ease;
+      }
+
+      .border-left-dark {
+        border-left: 4px solid #343a40 !important;
+        box-shadow: 0 2px 8px rgba(52,58,64,0.1);
+        transition: all 0.3s ease;
+      }
+
+      .border-left-primary:hover,
+      .border-left-success:hover,
+      .border-left-info:hover,
+      .border-left-warning:hover,
+      .border-left-dark:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      }
+
+      .about-avatar i {
+        transition: all 0.3s ease;
+      }
+
+      .about-avatar:hover i {
+        transform: scale(1.1);
+        color: #007bff !important;
+      }
+
+      #about .card-text a {
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      #about .card-text a:hover {
+        text-decoration: underline;
+      }
+
+      #about .list-unstyled li {
+        padding: 5px 0;
+        font-size: 14px;
+      }
+
+      #about .list-unstyled li i {
+        margin-right: 10px;
+        width: 20px;
+      }
+
+      /* Animation for about page */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Mobile optimizations for about page */
+      @media (max-width: 767px) {
+        #about .card {
+          margin-bottom: 15px;
+        }
+
+        #about .about-avatar i {
+          font-size: 3rem !important;
+        }
+
+        #about h3 {
+          font-size: 1.5rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -515,6 +614,11 @@
         <li class="nav-item">
           <a class="nav-link" href="#" onclick="showTab('income-statement'); closeMobileNav();">
             <i class="fas fa-chart-line"></i> Income Statement
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showTab('about'); closeMobileNav();">
+            <i class="fas fa-info-circle"></i> About
           </a>
         </li>
       </ul>
@@ -740,6 +844,125 @@
         <div class="card">
           <div class="card-body" id="income-statement-content">
             <!-- Income statement will be loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- About Tab -->
+      <div id="about" class="tab-content" style="display: none;">
+        <div class="page-header">
+          <h2><i class="fas fa-info-circle"></i> About</h2>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="card">
+              <div class="card-header text-center">
+                <h4><i class="fas fa-user"></i> Application Information</h4>
+              </div>
+              <div class="card-body">
+                <div class="text-center mb-4">
+                  <div class="about-avatar mb-3">
+                    <i class="fas fa-user-circle fa-5x text-primary"></i>
+                  </div>
+                  <h3 class="text-primary">Fung's Acct</h3>
+                  <p class="text-muted lead">Comprehensive Accounting Application</p>
+                </div>
+
+                <div class="row">
+                  <div class="col-12 col-md-6">
+                    <div class="card border-left-primary">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-code text-primary"></i> Developer
+                        </h5>
+                        <p class="card-text">
+                          <strong>Fung Roje Daimary</strong><br>
+                          Application Developer & Designer
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <div class="card border-left-success">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-envelope text-success"></i> Contact Information
+                        </h5>
+                        <p class="card-text">
+                          <strong>Email:</strong><br>
+                          <a href="mailto:frddaimary@gmail.com" class="text-success">
+                            frddaimary@gmail.com
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mt-3">
+                  <div class="col-12 col-md-6">
+                    <div class="card border-left-info">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-phone text-info"></i> Mobile
+                        </h5>
+                        <p class="card-text">
+                          <strong>Phone:</strong><br>
+                          <a href="tel:+918761033435" class="text-info">
+                            +91 8761033435
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <div class="card border-left-warning">
+                      <div class="card-body">
+                        <h5 class="card-title">
+                          <i class="fas fa-calendar text-warning"></i> Version
+                        </h5>
+                        <p class="card-text">
+                          <strong>Version:</strong> 1.0.0<br>
+                          <strong>Built:</strong> 2024
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <div class="card border-left-dark">
+                    <div class="card-body">
+                      <h5 class="card-title">
+                        <i class="fas fa-laptop-code text-dark"></i> About This Application
+                      </h5>
+                      <p class="card-text">
+                        Fung's Acct is a comprehensive web-based general ledger accounting application built with modern web technologies. 
+                        This application implements double-entry bookkeeping principles and provides all essential accounting features 
+                        for small to medium businesses including:
+                      </p>
+                      <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Dashboard with financial summaries</li>
+                        <li><i class="fas fa-check text-success"></i> Chart of accounts management</li>
+                        <li><i class="fas fa-check text-success"></i> Journal entries with double-entry validation</li>
+                        <li><i class="fas fa-check text-success"></i> Financial reports (Trial Balance, Balance Sheet, Income Statement)</li>
+                        <li><i class="fas fa-check text-success"></i> Responsive design for all devices</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-center mt-4">
+                  <p class="text-muted">
+                    <i class="fas fa-heart text-danger"></i> 
+                    Built with dedication to provide efficient accounting solutions
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
