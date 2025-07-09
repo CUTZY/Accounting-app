@@ -469,7 +469,8 @@ class AccountingApp {
         }
         
         if (saveButton) {
-            saveButton.disabled = !isBalanced;
+            // Allow saving even if unbalanced (removes validation)
+            saveButton.disabled = false;
         }
     }
 
