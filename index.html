@@ -638,6 +638,9 @@
               <button class="btn btn-success quick-action-btn" onclick="showTab('chart-accounts')">
                 <i class="fas fa-cog"></i> Manage Accounts
               </button>
+              <button class="btn btn-warning quick-action-btn" onclick="app.loadDemoData()" title="Load restaurant demo data">
+                <i class="fas fa-database"></i> Demo Data
+              </button>
             </div>
           </div>
         </div>
@@ -956,6 +959,11 @@
                 </div>
 
                 <div class="text-center mt-4">
+                  <div class="mb-3">
+                    <button class="btn btn-primary btn-lg" onclick="app.loadDemoData()" title="Load sample restaurant data">
+                      <i class="fas fa-database"></i> Load Demo Restaurant Data
+                    </button>
+                  </div>
                   <p class="text-muted">
                     <i class="fas fa-heart text-danger"></i> 
                     Built with dedication to provide efficient accounting solutions

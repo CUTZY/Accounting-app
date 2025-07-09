@@ -1,6 +1,6 @@
 # Fung's Acct
 
-A comprehensive web-based general ledger accounting application built with HTML, CSS, and JavaScript. This application implements double-entry bookkeeping principles and provides all essential accounting features for small to medium businesses.
+A comprehensive web-based general ledger accounting application built with HTML, CSS, and JavaScript. This application implements double-entry bookkeeping principles and provides all essential accounting features for small to medium businesses. **Now includes complete restaurant business demo data** with realistic transactions, accounts, and financial reports.
 
 ## Features
 
@@ -36,6 +36,24 @@ A comprehensive web-based general ledger accounting application built with HTML,
 - Form validation
 - Professional accounting principles
 
+## Demo Data
+
+🍽️ **Restaurant Business Demo** - The application now includes comprehensive demo data for a small restaurant business featuring:
+
+- **27 Restaurant-Specific Accounts**: Cash, Bank Account, Food/Beverage Inventory, Kitchen Equipment, Furniture, and all typical restaurant accounts
+- **20 Realistic Transactions**: Owner investment, equipment purchases, daily sales, cost of goods sold, payroll, rent, utilities, and more
+- **Complete Financial Picture**: From startup investment through daily operations
+- **Professional References**: Each transaction includes proper reference numbers and descriptions
+
+### Demo Transactions Include:
+- Owner's initial $50,000 investment
+- Kitchen equipment purchase ($25,000)
+- Daily sales with cash and card payments
+- Food and beverage inventory management
+- Staff payroll and operating expenses
+- Monthly rent, utilities, and insurance
+- Marketing campaigns and equipment maintenance
+
 ## Getting Started
 
 ### Prerequisites
@@ -45,7 +63,8 @@ A comprehensive web-based general ledger accounting application built with HTML,
 ### Installation
 1. Download or clone the project files
 2. Open `index.html` in your web browser
-3. The application will automatically load with a default chart of accounts
+3. The application will automatically load with restaurant demo data
+4. Click "Demo Data" button anytime to reload fresh demo data
 
 ## How to Use
 
@@ -88,35 +107,50 @@ When you first open the application, it will automatically create a standard cha
 
 ## Example Transactions
 
-### Recording a Sale
+### Recording Daily Restaurant Sales
 ```
 Date: 2024-01-15
-Description: Sale of merchandise to customer
+Description: Daily sales - opening day
 
 Account                    Debit    Credit
-Cash                      $1,000
-Sales Revenue                       $1,000
+Cash                       $850
+Bank Account              $1,200
+Food Sales                          $1,640
+Beverage Sales                       $280
+Sales Tax Payable                    $130
 ```
 
-### Recording an Expense
+### Recording Food Costs
 ```
-Date: 2024-01-16
-Description: Monthly rent payment
-
-Account                    Debit    Credit
-Rent Expense               $500
-Cash                                 $500
-```
-
-### Recording Equipment Purchase
-```
-Date: 2024-01-17
-Description: Purchase office equipment
+Date: 2024-01-15
+Description: Cost of goods sold - opening day
 
 Account                    Debit    Credit
-Equipment                 $2,000
-Cash                      $500
-Notes Payable                      $1,500
+Food Costs                 $520
+Beverage Costs             $85
+Food Inventory                      $520
+Beverage Inventory                  $85
+```
+
+### Recording Staff Payroll
+```
+Date: 2024-01-21
+Description: Weekly payroll - kitchen and service staff
+
+Account                    Debit    Credit
+Wages & Salaries          $2,800
+Bank Account                       $2,800
+```
+
+### Recording Kitchen Equipment Purchase
+```
+Date: 2024-01-02
+Description: Purchase kitchen equipment
+
+Account                    Debit    Credit
+Kitchen Equipment        $25,000
+Bank Account                      $15,000
+Equipment Loan                    $10,000
 ```
 
 ## Accounting Principles

@@ -3,10 +3,20 @@
 
 class AccountingApp {
     constructor() {
+        // Check if this is the first time loading the app
+        const isFirstLoad = !localStorage.getItem('gl_accounts');
+        
         this.accounts = JSON.parse(localStorage.getItem('gl_accounts')) || [];
         this.journalEntries = JSON.parse(localStorage.getItem('gl_journal_entries')) || [];
         this.nextEntryId = parseInt(localStorage.getItem('gl_next_entry_id')) || 1;
         this.nextAccountId = parseInt(localStorage.getItem('gl_next_account_id')) || 1;
+        
+        // If first load, automatically load demo data
+        if (isFirstLoad) {
+            setTimeout(() => {
+                this.loadDemoData();
+            }, 500); // Small delay to ensure DOM is ready
+        }
         
         this.initializeApp();
     }
@@ -31,28 +41,353 @@ class AccountingApp {
         this.loadJournalEntries();
     }
 
-    // Load default chart of accounts
+    // Reset app with fresh demo data
+    loadDemoData() {
+        // Clear existing data
+        this.accounts = [];
+        this.journalEntries = [];
+        this.nextEntryId = 1;
+        this.nextAccountId = 1;
+        
+        // Load fresh demo data
+        this.loadDefaultAccounts();
+        
+        // Refresh all displays
+        this.loadDashboard();
+        this.loadAccountsList();
+        this.loadJournalEntries();
+        
+        this.showNotification('Demo restaurant data loaded successfully!', 'success');
+    }
+
+    // Load default chart of accounts for restaurant business
     loadDefaultAccounts() {
         const defaultAccounts = [
-            { id: 1, number: '1000', name: 'Cash', type: 'Asset', description: 'Cash on hand and in banks' },
-            { id: 2, number: '1200', name: 'Accounts Receivable', type: 'Asset', description: 'Money owed by customers' },
-            { id: 3, number: '1500', name: 'Inventory', type: 'Asset', description: 'Goods held for sale' },
-            { id: 4, number: '1700', name: 'Equipment', type: 'Asset', description: 'Office and business equipment' },
-            { id: 5, number: '2000', name: 'Accounts Payable', type: 'Liability', description: 'Money owed to suppliers' },
-            { id: 6, number: '2500', name: 'Notes Payable', type: 'Liability', description: 'Loans and promissory notes' },
-            { id: 7, number: '3000', name: 'Owners Equity', type: 'Equity', description: 'Owner\'s investment in the business' },
-            { id: 8, number: '3500', name: 'Retained Earnings', type: 'Equity', description: 'Accumulated profits' },
-            { id: 9, number: '4000', name: 'Sales Revenue', type: 'Revenue', description: 'Income from sales' },
-            { id: 10, number: '4500', name: 'Service Revenue', type: 'Revenue', description: 'Income from services' },
-            { id: 11, number: '5000', name: 'Cost of Goods Sold', type: 'Expense', description: 'Direct costs of products sold' },
-            { id: 12, number: '6000', name: 'Rent Expense', type: 'Expense', description: 'Monthly rent payments' },
-            { id: 13, number: '6100', name: 'Utilities Expense', type: 'Expense', description: 'Electricity, water, gas' },
-            { id: 14, number: '6200', name: 'Office Supplies Expense', type: 'Expense', description: 'Office supplies and materials' }
+            // Assets
+            { id: 1, number: '1000', name: 'Cash', type: 'Asset', description: 'Cash register and petty cash' },
+            { id: 2, number: '1050', name: 'Bank Account', type: 'Asset', description: 'Business checking account' },
+            { id: 3, number: '1200', name: 'Accounts Receivable', type: 'Asset', description: 'Catering and corporate orders' },
+            { id: 4, number: '1300', name: 'Food Inventory', type: 'Asset', description: 'Food ingredients and supplies' },
+            { id: 5, number: '1350', name: 'Beverage Inventory', type: 'Asset', description: 'Drinks and beverage supplies' },
+            { id: 6, number: '1400', name: 'Prepaid Rent', type: 'Asset', description: 'Prepaid restaurant rent' },
+            { id: 7, number: '1700', name: 'Kitchen Equipment', type: 'Asset', description: 'Stoves, ovens, refrigerators' },
+            { id: 8, number: '1750', name: 'Furniture & Fixtures', type: 'Asset', description: 'Tables, chairs, decor' },
+            
+            // Liabilities  
+            { id: 9, number: '2000', name: 'Accounts Payable', type: 'Liability', description: 'Money owed to food suppliers' },
+            { id: 10, number: '2100', name: 'Accrued Wages', type: 'Liability', description: 'Unpaid wages to staff' },
+            { id: 11, number: '2200', name: 'Sales Tax Payable', type: 'Liability', description: 'Sales tax collected' },
+            { id: 12, number: '2500', name: 'Equipment Loan', type: 'Liability', description: 'Loan for kitchen equipment' },
+            
+            // Equity
+            { id: 13, number: '3000', name: 'Owner\'s Equity', type: 'Equity', description: 'Owner\'s investment in restaurant' },
+            { id: 14, number: '3500', name: 'Retained Earnings', type: 'Equity', description: 'Accumulated restaurant profits' },
+            
+            // Revenue
+            { id: 15, number: '4000', name: 'Food Sales', type: 'Revenue', description: 'Revenue from food sales' },
+            { id: 16, number: '4100', name: 'Beverage Sales', type: 'Revenue', description: 'Revenue from drink sales' },
+            { id: 17, number: '4200', name: 'Catering Revenue', type: 'Revenue', description: 'Income from catering services' },
+            
+            // Expenses
+            { id: 18, number: '5000', name: 'Food Costs', type: 'Expense', description: 'Cost of food ingredients' },
+            { id: 19, number: '5100', name: 'Beverage Costs', type: 'Expense', description: 'Cost of beverages' },
+            { id: 20, number: '6000', name: 'Wages & Salaries', type: 'Expense', description: 'Staff wages and salaries' },
+            { id: 21, number: '6100', name: 'Rent Expense', type: 'Expense', description: 'Monthly restaurant rent' },
+            { id: 22, number: '6200', name: 'Utilities Expense', type: 'Expense', description: 'Electricity, gas, water' },
+            { id: 23, number: '6300', name: 'Marketing & Advertising', type: 'Expense', description: 'Promotional expenses' },
+            { id: 24, number: '6400', name: 'Equipment Maintenance', type: 'Expense', description: 'Kitchen equipment repairs' },
+            { id: 25, number: '6500', name: 'Insurance Expense', type: 'Expense', description: 'Business insurance premiums' },
+            { id: 26, number: '6600', name: 'Supplies Expense', type: 'Expense', description: 'Paper goods, cleaning supplies' },
+            { id: 27, number: '6700', name: 'Delivery Fees', type: 'Expense', description: 'Food delivery service fees' }
         ];
 
         this.accounts = defaultAccounts;
-        this.nextAccountId = 15;
+        this.nextAccountId = 28;
+        
+        // Load demo journal entries for restaurant
+        this.loadDemoJournalEntries();
+        
         this.saveData();
+    }
+
+    // Load demo journal entries for restaurant business
+    loadDemoJournalEntries() {
+        const demoEntries = [
+            // Owner's initial investment
+            {
+                id: 1,
+                date: '2024-01-01',
+                reference: 'INV001',
+                description: 'Owner initial investment to start restaurant',
+                transactions: [
+                    { accountId: 2, debit: 50000, credit: 0 }, // Bank Account
+                    { accountId: 13, debit: 0, credit: 50000 } // Owner's Equity
+                ],
+                createdAt: '2024-01-01T09:00:00.000Z'
+            },
+
+            // Purchase kitchen equipment
+            {
+                id: 2,
+                date: '2024-01-02',
+                reference: 'EQ001',
+                description: 'Purchase kitchen equipment - stoves, ovens, refrigerator',
+                transactions: [
+                    { accountId: 7, debit: 25000, credit: 0 }, // Kitchen Equipment
+                    { accountId: 2, debit: 0, credit: 15000 }, // Bank Account
+                    { accountId: 12, debit: 0, credit: 10000 } // Equipment Loan
+                ],
+                createdAt: '2024-01-02T10:30:00.000Z'
+            },
+
+            // Purchase furniture and fixtures
+            {
+                id: 3,
+                date: '2024-01-03',
+                reference: 'FUR001',
+                description: 'Purchase dining tables, chairs, and restaurant decor',
+                transactions: [
+                    { accountId: 8, debit: 8000, credit: 0 }, // Furniture & Fixtures
+                    { accountId: 2, debit: 0, credit: 8000 } // Bank Account
+                ],
+                createdAt: '2024-01-03T14:15:00.000Z'
+            },
+
+            // Prepay rent for 3 months
+            {
+                id: 4,
+                date: '2024-01-05',
+                reference: 'RENT001',
+                description: 'Prepaid rent for restaurant space - 3 months',
+                transactions: [
+                    { accountId: 6, debit: 9000, credit: 0 }, // Prepaid Rent
+                    { accountId: 2, debit: 0, credit: 9000 } // Bank Account
+                ],
+                createdAt: '2024-01-05T11:00:00.000Z'
+            },
+
+            // Initial food inventory purchase
+            {
+                id: 5,
+                date: '2024-01-10',
+                reference: 'FOOD001',
+                description: 'Initial food inventory purchase from Fresh Foods Supplier',
+                transactions: [
+                    { accountId: 4, debit: 3500, credit: 0 }, // Food Inventory
+                    { accountId: 9, debit: 0, credit: 3500 } // Accounts Payable
+                ],
+                createdAt: '2024-01-10T08:30:00.000Z'
+            },
+
+            // Initial beverage inventory purchase
+            {
+                id: 6,
+                date: '2024-01-10',
+                reference: 'BEV001',
+                description: 'Initial beverage inventory - sodas, juices, coffee',
+                transactions: [
+                    { accountId: 5, debit: 1200, credit: 0 }, // Beverage Inventory
+                    { accountId: 9, debit: 0, credit: 1200 } // Accounts Payable
+                ],
+                createdAt: '2024-01-10T09:15:00.000Z'
+            },
+
+            // Daily sales - Day 1
+            {
+                id: 7,
+                date: '2024-01-15',
+                reference: 'SALES001',
+                description: 'Daily sales - opening day',
+                transactions: [
+                    { accountId: 1, debit: 850, credit: 0 }, // Cash
+                    { accountId: 2, debit: 1200, credit: 0 }, // Bank Account (card payments)
+                    { accountId: 15, debit: 0, credit: 1640 }, // Food Sales
+                    { accountId: 16, debit: 0, credit: 280 }, // Beverage Sales
+                    { accountId: 11, debit: 0, credit: 130 } // Sales Tax Payable
+                ],
+                createdAt: '2024-01-15T22:00:00.000Z'
+            },
+
+            // Record cost of goods sold for Day 1
+            {
+                id: 8,
+                date: '2024-01-15',
+                reference: 'COGS001',
+                description: 'Cost of goods sold - opening day',
+                transactions: [
+                    { accountId: 18, debit: 520, credit: 0 }, // Food Costs
+                    { accountId: 19, debit: 85, credit: 0 }, // Beverage Costs
+                    { accountId: 4, debit: 0, credit: 520 }, // Food Inventory
+                    { accountId: 5, debit: 0, credit: 85 } // Beverage Inventory
+                ],
+                createdAt: '2024-01-15T23:00:00.000Z'
+            },
+
+            // Pay staff wages for first week
+            {
+                id: 9,
+                date: '2024-01-21',
+                reference: 'PAY001',
+                description: 'Weekly payroll - kitchen and service staff',
+                transactions: [
+                    { accountId: 20, debit: 2800, credit: 0 }, // Wages & Salaries
+                    { accountId: 2, debit: 0, credit: 2800 } // Bank Account
+                ],
+                createdAt: '2024-01-21T17:00:00.000Z'
+            },
+
+            // Daily sales - Weekend rush
+            {
+                id: 10,
+                date: '2024-01-21',
+                reference: 'SALES002',
+                description: 'Weekend sales - busy Saturday',
+                transactions: [
+                    { accountId: 1, debit: 1450, credit: 0 }, // Cash
+                    { accountId: 2, debit: 2100, credit: 0 }, // Bank Account
+                    { accountId: 15, debit: 0, credit: 2840 }, // Food Sales
+                    { accountId: 16, debit: 0, credit: 485 }, // Beverage Sales
+                    { accountId: 11, debit: 0, credit: 225 } // Sales Tax Payable
+                ],
+                createdAt: '2024-01-21T23:30:00.000Z'
+            },
+
+            // Catering order
+            {
+                id: 11,
+                date: '2024-01-25',
+                reference: 'CAT001',
+                description: 'Catering order for local business meeting',
+                transactions: [
+                    { accountId: 3, debit: 950, credit: 0 }, // Accounts Receivable
+                    { accountId: 17, debit: 0, credit: 950 } // Catering Revenue
+                ],
+                createdAt: '2024-01-25T16:00:00.000Z'
+            },
+
+            // Food supplier payment
+            {
+                id: 12,
+                date: '2024-01-30',
+                reference: 'PAY002',
+                description: 'Payment to Fresh Foods Supplier',
+                transactions: [
+                    { accountId: 9, debit: 3500, credit: 0 }, // Accounts Payable
+                    { accountId: 2, debit: 0, credit: 3500 } // Bank Account
+                ],
+                createdAt: '2024-01-30T14:20:00.000Z'
+            },
+
+            // Monthly rent expense
+            {
+                id: 13,
+                date: '2024-01-31',
+                reference: 'RENT002',
+                description: 'Monthly rent expense - January',
+                transactions: [
+                    { accountId: 21, debit: 3000, credit: 0 }, // Rent Expense
+                    { accountId: 6, debit: 0, credit: 3000 } // Prepaid Rent
+                ],
+                createdAt: '2024-01-31T12:00:00.000Z'
+            },
+
+            // Utilities payment
+            {
+                id: 14,
+                date: '2024-01-31',
+                reference: 'UTIL001',
+                description: 'Monthly utilities - electricity, gas, water',
+                transactions: [
+                    { accountId: 22, debit: 450, credit: 0 }, // Utilities Expense
+                    { accountId: 2, debit: 0, credit: 450 } // Bank Account
+                ],
+                createdAt: '2024-01-31T15:45:00.000Z'
+            },
+
+            // Marketing expense
+            {
+                id: 15,
+                date: '2024-02-01',
+                reference: 'MKT001',
+                description: 'Social media advertising campaign',
+                transactions: [
+                    { accountId: 23, debit: 300, credit: 0 }, // Marketing & Advertising
+                    { accountId: 2, debit: 0, credit: 300 } // Bank Account
+                ],
+                createdAt: '2024-02-01T10:30:00.000Z'
+            },
+
+            // Equipment maintenance
+            {
+                id: 16,
+                date: '2024-02-05',
+                reference: 'MAINT001',
+                description: 'Repair of commercial oven',
+                transactions: [
+                    { accountId: 24, debit: 275, credit: 0 }, // Equipment Maintenance
+                    { accountId: 1, debit: 0, credit: 275 } // Cash
+                ],
+                createdAt: '2024-02-05T11:15:00.000Z'
+            },
+
+            // Insurance payment
+            {
+                id: 17,
+                date: '2024-02-10',
+                reference: 'INS001',
+                description: 'Monthly business insurance premium',
+                transactions: [
+                    { accountId: 25, debit: 650, credit: 0 }, // Insurance Expense
+                    { accountId: 2, debit: 0, credit: 650 } // Bank Account
+                ],
+                createdAt: '2024-02-10T09:00:00.000Z'
+            },
+
+            // Supplies purchase
+            {
+                id: 18,
+                date: '2024-02-12',
+                reference: 'SUP001',
+                description: 'Purchase cleaning supplies and paper goods',
+                transactions: [
+                    { accountId: 26, debit: 180, credit: 0 }, // Supplies Expense
+                    { accountId: 1, debit: 0, credit: 180 } // Cash
+                ],
+                createdAt: '2024-02-12T14:30:00.000Z'
+            },
+
+            // Delivery fees
+            {
+                id: 19,
+                date: '2024-02-14',
+                reference: 'DEL001',
+                description: 'Valentine\'s Day delivery service fees',
+                transactions: [
+                    { accountId: 27, debit: 95, credit: 0 }, // Delivery Fees
+                    { accountId: 1, debit: 0, credit: 95 } // Cash
+                ],
+                createdAt: '2024-02-14T20:45:00.000Z'
+            },
+
+            // Strong daily sales
+            {
+                id: 20,
+                date: '2024-02-14',
+                reference: 'SALES003',
+                description: 'Valentine\'s Day special menu sales',
+                transactions: [
+                    { accountId: 1, debit: 1950, credit: 0 }, // Cash
+                    { accountId: 2, debit: 2800, credit: 0 }, // Bank Account
+                    { accountId: 15, debit: 0, credit: 3800 }, // Food Sales
+                    { accountId: 16, debit: 0, credit: 650 }, // Beverage Sales
+                    { accountId: 11, debit: 0, credit: 300 } // Sales Tax Payable
+                ],
+                createdAt: '2024-02-14T23:59:00.000Z'
+            }
+        ];
+
+        this.journalEntries = demoEntries;
+        this.nextEntryId = 21;
     }
 
     // Save data to localStorage
