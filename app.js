@@ -1191,6 +1191,38 @@ class AccountingApp {
         return balances;
     }
 
+    // Calculate total debits and credits for each account
+    calculateAccountTotals() {
+        const totals = {};
+        
+        // Initialize all accounts with zero totals
+        this.accounts.forEach(account => {
+            totals[account.id] = {
+                totalDebits: 0,
+                totalCredits: 0,
+                netBalance: 0
+            };
+        });
+        
+        // Process all journal entries
+        this.journalEntries.forEach(entry => {
+            entry.transactions.forEach(transaction => {
+                if (!totals[transaction.accountId]) {
+                    totals[transaction.accountId] = {
+                        totalDebits: 0,
+                        totalCredits: 0,
+                        netBalance: 0
+                    };
+                }
+                totals[transaction.accountId].totalDebits += transaction.debit;
+                totals[transaction.accountId].totalCredits += transaction.credit;
+                totals[transaction.accountId].netBalance += transaction.debit - transaction.credit;
+            });
+        });
+        
+        return totals;
+    }
+
     getAccountBalance(accountId) {
         const balances = this.calculateAccountBalances();
         return balances[accountId] || 0;
@@ -1249,95 +1281,117 @@ class AccountingApp {
     }
 
     generateBalanceSheet() {
-        const balances = this.calculateAccountBalances();
-        const assetsSection = document.getElementById('assets-section');
-        const liabilitiesEquitySection = document.getElementById('liabilities-equity-section');
+        const accountTotals = this.calculateAccountTotals();
+        const tbody = document.getElementById('balance-sheet-table');
+        const tfoot = document.getElementById('balance-sheet-totals');
         
-        // Assets
-        let assetsHtml = '';
-        let totalAssets = 0;
+        let html = '';
+        let grandTotalDebits = 0;
+        let grandTotalCredits = 0;
+        let grandTotalAssets = 0;
+        let grandTotalLiabilities = 0;
+        let grandTotalEquity = 0;
         
-        const assets = this.accounts.filter(acc => acc.type === 'Asset');
-        assets.forEach(account => {
-            const balance = balances[account.id] || 0;
-            if (balance !== 0) {
-                totalAssets += balance;
-                assetsHtml += `
-                    <div class="d-flex justify-content-between">
-                        <span>${account.name}</span>
-                        <span>${this.formatCurrency(balance)}</span>
-                    </div>
+        // Order accounts by type for balance sheet presentation
+        const accountTypes = ['Asset', 'Liability', 'Equity'];
+        
+        accountTypes.forEach(type => {
+            const typeAccounts = this.accounts.filter(acc => acc.type === type);
+            
+            if (typeAccounts.length > 0) {
+                // Add type header row
+                html += `
+                    <tr class="table-secondary">
+                        <td colspan="5" class="font-weight-bold">${type.toUpperCase()} ACCOUNTS</td>
+                    </tr>
                 `;
+                
+                typeAccounts.forEach(account => {
+                    const totals = accountTotals[account.id] || { totalDebits: 0, totalCredits: 0, netBalance: 0 };
+                    
+                    // Only show accounts with activity
+                    if (totals.totalDebits > 0 || totals.totalCredits > 0) {
+                        const netBalance = totals.netBalance;
+                        const balanceClass = netBalance >= 0 ? 'text-success' : 'text-danger';
+                        
+                        // For liabilities and equity, show as positive if they have credit balances
+                        let displayBalance = netBalance;
+                        if ((type === 'Liability' || type === 'Equity') && netBalance < 0) {
+                            displayBalance = Math.abs(netBalance);
+                        }
+                        
+                        html += `
+                            <tr>
+                                <td>${account.number} - ${account.name}</td>
+                                <td><span class="badge badge-outline-${this.getTypeColor(type)}">${type}</span></td>
+                                <td class="text-right">${this.formatCurrency(totals.totalDebits)}</td>
+                                <td class="text-right">${this.formatCurrency(totals.totalCredits)}</td>
+                                <td class="text-right ${balanceClass} font-weight-bold">${this.formatCurrency(displayBalance)}</td>
+                            </tr>
+                        `;
+                        
+                        // Accumulate totals
+                        grandTotalDebits += totals.totalDebits;
+                        grandTotalCredits += totals.totalCredits;
+                        
+                        if (type === 'Asset') {
+                            grandTotalAssets += displayBalance;
+                        } else if (type === 'Liability') {
+                            grandTotalLiabilities += Math.abs(displayBalance);
+                        } else if (type === 'Equity') {
+                            grandTotalEquity += Math.abs(displayBalance);
+                        }
+                    }
+                });
             }
         });
         
-        assetsHtml += `
-            <hr>
-            <div class="d-flex justify-content-between font-weight-bold">
-                <span>TOTAL ASSETS</span>
-                <span>${this.formatCurrency(totalAssets)}</span>
-            </div>
-        `;
-        
-        // Liabilities and Equity
-        let liabilitiesEquityHtml = '';
-        let totalLiabilities = 0;
-        let totalEquity = 0;
-        
-        // Liabilities
-        liabilitiesEquityHtml += '<h6>LIABILITIES</h6>';
-        const liabilities = this.accounts.filter(acc => acc.type === 'Liability');
-        liabilities.forEach(account => {
-            const balance = Math.abs(balances[account.id] || 0);
-            if (balance !== 0) {
-                totalLiabilities += balance;
-                liabilitiesEquityHtml += `
-                    <div class="d-flex justify-content-between">
-                        <span>${account.name}</span>
-                        <span>${this.formatCurrency(balance)}</span>
-                    </div>
-                `;
-            }
-        });
-        
-        // Equity
-        liabilitiesEquityHtml += '<h6 class="mt-3">EQUITY</h6>';
-        const equity = this.accounts.filter(acc => acc.type === 'Equity');
-        equity.forEach(account => {
-            const balance = Math.abs(balances[account.id] || 0);
-            if (balance !== 0) {
-                totalEquity += balance;
-                liabilitiesEquityHtml += `
-                    <div class="d-flex justify-content-between">
-                        <span>${account.name}</span>
-                        <span>${this.formatCurrency(balance)}</span>
-                    </div>
-                `;
-            }
-        });
-        
-        // Add net income to equity
+        // Add net income to equity if there's revenue/expense activity
         const netIncome = this.calculateNetIncome();
         if (netIncome !== 0) {
-            totalEquity += netIncome;
-            liabilitiesEquityHtml += `
-                <div class="d-flex justify-content-between">
-                    <span>Net Income</span>
-                    <span>${this.formatCurrency(netIncome)}</span>
-                </div>
+            grandTotalEquity += netIncome;
+            html += `
+                <tr>
+                    <td>Net Income</td>
+                    <td><span class="badge badge-outline-info">Equity</span></td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right ${netIncome >= 0 ? 'text-success' : 'text-danger'} font-weight-bold">${this.formatCurrency(netIncome)}</td>
+                </tr>
             `;
         }
         
-        liabilitiesEquityHtml += `
-            <hr>
-            <div class="d-flex justify-content-between font-weight-bold">
-                <span>TOTAL LIABILITIES & EQUITY</span>
-                <span>${this.formatCurrency(totalLiabilities + totalEquity)}</span>
-            </div>
-        `;
+        tbody.innerHTML = html;
         
-        assetsSection.innerHTML = assetsHtml;
-        liabilitiesEquitySection.innerHTML = liabilitiesEquityHtml;
+        // Add totals footer
+        tfoot.innerHTML = `
+            <tr class="table-info font-weight-bold">
+                <td colspan="2">GRAND TOTALS</td>
+                <td class="text-right">${this.formatCurrency(grandTotalDebits)}</td>
+                <td class="text-right">${this.formatCurrency(grandTotalCredits)}</td>
+                <td class="text-right">-</td>
+            </tr>
+            <tr class="table-warning font-weight-bold">
+                <td colspan="4">TOTAL ASSETS</td>
+                <td class="text-right">${this.formatCurrency(grandTotalAssets)}</td>
+            </tr>
+            <tr class="table-warning font-weight-bold">
+                <td colspan="4">TOTAL LIABILITIES & EQUITY</td>
+                <td class="text-right">${this.formatCurrency(grandTotalLiabilities + grandTotalEquity)}</td>
+            </tr>
+        `;
+    }
+
+    // Helper function to get badge color for account types
+    getTypeColor(type) {
+        switch(type) {
+            case 'Asset': return 'primary';
+            case 'Liability': return 'danger';
+            case 'Equity': return 'success';
+            case 'Revenue': return 'info';
+            case 'Expense': return 'warning';
+            default: return 'secondary';
+        }
     }
 
     calculateNetIncome() {
