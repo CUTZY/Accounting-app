@@ -401,6 +401,60 @@
           border: 2px solid;
         }
       }
+
+      /* Account action buttons - positioned on the right */
+      .account-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .account-actions .btn {
+        min-width: auto;
+        padding: 6px 10px;
+        min-height: auto;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .account-actions .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      .account-actions .btn-outline-primary:hover {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+      }
+
+      .account-actions .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+      }
+
+      /* Account row hover effect */
+      .account-row:hover {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+      }
+
+      /* Mobile responsive adjustments for account actions */
+      @media (max-width: 767px) {
+        .account-actions {
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .account-actions .btn {
+          width: 100%;
+          font-size: 12px;
+          padding: 4px 8px;
+        }
+      }
     </style>
   </head>
   <body>

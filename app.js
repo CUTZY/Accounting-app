@@ -312,17 +312,19 @@ class AccountingApp {
                     const balanceClass = balance >= 0 ? 'balance-positive' : 'balance-negative';
                     
                     html += `
-                        <div class="row py-2 border-bottom">
-                            <div class="col-md-2"><strong>${account.number}</strong></div>
-                            <div class="col-md-4">${account.name}</div>
-                            <div class="col-md-3 ${balanceClass}">${this.formatCurrency(balance)}</div>
-                            <div class="col-md-3">
-                                <button class="btn btn-sm btn-outline-primary" onclick="app.editAccount(${account.id})">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="app.deleteAccount(${account.id})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                        <div class="row py-2 border-bottom align-items-center account-row">
+                            <div class="col-2"><strong>${account.number}</strong></div>
+                            <div class="col-5">${account.name}</div>
+                            <div class="col-3 ${balanceClass}">${this.formatCurrency(balance)}</div>
+                            <div class="col-2">
+                                <div class="account-actions">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="app.editAccount(${account.id})" title="Edit Account">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="app.deleteAccount(${account.id})" title="Delete Account">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
