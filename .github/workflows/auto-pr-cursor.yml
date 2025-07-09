@@ -1,0 +1,31 @@
+name: Auto-PR for Cursor branches
+
+on:
+  push:
+    branches:
+      - 'cursor/**'
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/cursor/')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref_name }}
+        base: main
+        title: "Auto-PR: ${{ github.ref_name }}"
+        body: |
+          🤖 **Auto-generated Pull Request for Cursor branch**
+          
+          This PR was automatically created when the cursor branch `${{ github.ref_name }}` was pushed.
+          
+          **Branch:** `${{ github.ref_name }}`
+          **Auto-merge:** You can enable auto-merge on this PR if desired.
+        draft: false
