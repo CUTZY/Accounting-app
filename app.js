@@ -60,6 +60,44 @@ class AccountingApp {
         this.showNotification('Demo restaurant data loaded successfully!', 'success');
     }
 
+    // Clear all data and start fresh
+    clearAllData() {
+        // Check if there's any data to clear
+        if (this.accounts.length === 0 && this.journalEntries.length === 0) {
+            this.showNotification('No data to clear. The application is already empty.', 'info');
+            return;
+        }
+
+        // Show confirmation dialog with data summary
+        const accountCount = this.accounts.length;
+        const entryCount = this.journalEntries.length;
+        
+        const confirmMessage = `⚠️ Are you sure you want to clear ALL data?\n\nThis will permanently delete:\n• ${accountCount} accounts\n• ${entryCount} journal entries\n• All financial data\n\nThis action cannot be undone!\n\nClick OK to clear everything and start fresh.`;
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        // Clear all data
+        this.accounts = [];
+        this.journalEntries = [];
+        this.nextEntryId = 1;
+        this.nextAccountId = 1;
+        
+        // Clear localStorage
+        localStorage.removeItem('gl_accounts');
+        localStorage.removeItem('gl_journal_entries');
+        localStorage.removeItem('gl_next_entry_id');
+        localStorage.removeItem('gl_next_account_id');
+        
+        // Refresh all displays
+        this.loadDashboard();
+        this.loadAccountsList();
+        this.loadJournalEntries();
+        
+        this.showNotification(`All data cleared successfully! Removed ${accountCount} accounts and ${entryCount} journal entries. You can now start fresh or load demo data.`, 'success');
+    }
+
     // Load default chart of accounts for restaurant business
     loadDefaultAccounts() {
         const defaultAccounts = [

@@ -64,7 +64,9 @@ A comprehensive web-based general ledger accounting application built with HTML,
 1. Download or clone the project files
 2. Open `index.html` in your web browser
 3. The application will automatically load with restaurant demo data
-4. Click "Demo Data" button anytime to reload fresh demo data
+4. Use the data management buttons:
+   - **"Demo Data"** - Load fresh restaurant demo data
+   - **"Clear Data"** - Remove all data and start completely fresh
 
 ## How to Use
 
@@ -166,12 +168,25 @@ This application follows standard accounting principles:
   - Revenue: Credit increases, Debit decreases
   - Expenses: Debit increases, Credit decreases
 
-## Data Storage
+## Data Management
 
+### Quick Actions
+The application provides convenient data management buttons:
+
+- 🗃️ **Load Demo Data**: Instantly populate with realistic restaurant business data
+- 🗑️ **Clear All Data**: Remove everything and start completely fresh
+
+### Data Storage
 - All data is stored locally in your browser's localStorage
 - Data persists between browser sessions
 - No external database required
 - **Important**: Clearing browser data will remove all accounting records
+
+### Starting Fresh
+1. Click **"Clear Data"** button (Dashboard or About page)
+2. Confirm the deletion (shows count of accounts/entries to be removed)
+3. Start entering your own business data
+4. Or reload demo data anytime for reference
 
 ## Browser Compatibility
 

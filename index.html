@@ -553,6 +553,41 @@
         #about h3 {
           font-size: 1.5rem;
         }
+
+        /* Stack buttons vertically on mobile */
+        #about .btn-lg {
+          display: block;
+          width: 100%;
+          margin: 5px 0 !important;
+        }
+
+        .quick-action-btn {
+          margin-bottom: 8px !important;
+        }
+      }
+
+      /* Data management buttons styling */
+      .data-management-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .data-management-buttons .btn {
+        flex: 1;
+        min-width: 140px;
+      }
+
+      @media (max-width: 576px) {
+        .data-management-buttons {
+          flex-direction: column;
+        }
+        
+        .data-management-buttons .btn {
+          width: 100%;
+          margin-bottom: 10px;
+        }
       }
     </style>
   </head>
@@ -640,6 +675,9 @@
               </button>
               <button class="btn btn-warning quick-action-btn" onclick="app.loadDemoData()" title="Load restaurant demo data">
                 <i class="fas fa-database"></i> Demo Data
+              </button>
+              <button class="btn btn-danger quick-action-btn" onclick="app.clearAllData()" title="Clear all data and start fresh">
+                <i class="fas fa-trash-alt"></i> Clear Data
               </button>
             </div>
           </div>
@@ -959,11 +997,18 @@
                 </div>
 
                 <div class="text-center mt-4">
-                  <div class="mb-3">
+                  <div class="mb-3 data-management-buttons">
                     <button class="btn btn-primary btn-lg" onclick="app.loadDemoData()" title="Load sample restaurant data">
-                      <i class="fas fa-database"></i> Load Demo Restaurant Data
+                      <i class="fas fa-database"></i> Load Demo Data
+                    </button>
+                    <button class="btn btn-outline-danger btn-lg" onclick="app.clearAllData()" title="Clear all data and start fresh">
+                      <i class="fas fa-trash-alt"></i> Clear All Data
                     </button>
                   </div>
+                  <p class="text-muted small">
+                    <i class="fas fa-info-circle"></i> 
+                    Demo data includes realistic restaurant transactions. Clear data to start with your own business.
+                  </p>
                   <p class="text-muted">
                     <i class="fas fa-heart text-danger"></i> 
                     Built with dedication to provide efficient accounting solutions
