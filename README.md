@@ -205,6 +205,10 @@ This is a standalone application that runs entirely in your web browser. For tec
 2. Verify all files are present and accessible
 3. Ensure modern browser compatibility
 
+## Author
+
+**Cursor Agent** - Project Developer and Maintainer
+
 ## License
 
 This project is provided as-is for educational and business use. Feel free to modify and adapt for your specific needs.
