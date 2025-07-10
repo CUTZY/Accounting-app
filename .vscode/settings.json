@@ -1,0 +1,44 @@
+{
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.postCommitCommand": "push",
+  "git.enableCommitSigning": false,
+  "git.defaultCloneDirectory": "./",
+  "git.pullTags": false,
+  "git.showPushSuccessNotification": true,
+  "git.suggestSmartCommit": true,
+  "git.smartCommitChanges": "all",
+  "git.autoStash": true,
+  "git.branchProtection": ["main", "master"],
+  "git.useCommitInputAsStashMessage": true,
+  
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.profiles.linux": {
+    "bash": {
+      "path": "/bin/bash",
+      "args": ["-l"],
+      "env": {
+        "CURSOR_GIT_AUTO": "true"
+      }
+    }
+  },
+  
+  "files.associations": {
+    ".cursor-git-config": "properties",
+    "*.sh": "shellscript"
+  },
+  
+  "editor.rulers": [80, 120],
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": true,
+  
+  "cursor.ai.commands": {
+    "git-push": "./cursor-workflow.sh push",
+    "git-start": "./cursor-workflow.sh start",
+    "git-merge": "./cursor-workflow.sh merge",
+    "git-status": "./cursor-workflow.sh status"
+  },
+  
+  "tasks.version": "2.0.0"
+}

@@ -1,0 +1,17 @@
+# Cursor Git Configuration
+# This file contains settings for Cursor git automation
+
+# Auto-push settings
+AUTO_PUSH_ENABLED=true
+AUTO_COMMIT_MESSAGE="Auto-commit: Cursor session changes"
+
+# Branch settings
+CURSOR_BRANCH_PREFIX="cursor/"
+AUTO_CREATE_BRANCHES=true
+
+# Merge settings
+AUTO_MERGE_ENABLED=true
+DELETE_MERGED_BRANCHES=true
+
+# Workflow settings
+DEFAULT_WORKFLOW="auto"
