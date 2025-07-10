@@ -19,16 +19,24 @@ jobs:
 
     - name: Configure Git
       run: |
-        git config --global user.name "Auto-merge Bot"
-        git config --global user.email "noreply@github.com"
+        git config --global user.name "Cursor Auto-merge Bot"
+        git config --global user.email "cursor-bot@noreply.github.com"
 
     - name: Merge to main
       run: |
+        echo "🔀 Auto-merging ${{ github.ref_name }} to main"
         git checkout main
         git pull origin main
-        git merge ${{ github.ref_name }} --no-ff -m "Auto-merge: ${{ github.ref_name }}"
+        git merge origin/${{ github.ref_name }} --no-ff -m "🤖 Auto-merge: ${{ github.ref_name }}"
         git push origin main
+        echo "✅ Successfully merged to main"
 
     - name: Delete merged branch
       run: |
+        echo "🗑️ Cleaning up merged branch"
         git push origin --delete ${{ github.ref_name }}
+        echo "✅ Branch deleted"
+
+    - name: Notify completion
+      run: |
+        echo "🎉 Auto-merge completed for ${{ github.ref_name }}"
