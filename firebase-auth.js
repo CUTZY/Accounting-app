@@ -296,70 +296,86 @@ class FirebaseAuthSystem {
         }
     }
 
-    // Data Storage - User-specific collections
+    // Subscribe to user data changes for real-time sync
+    subscribeToUserData(collection, callback) {
+        if (!this.isFirebaseReady || !this.currentUser) {
+            console.warn('Firebase not ready or user not authenticated');
+            return null;
+        }
+
+        try {
+            // Listen for real-time updates to user data
+            const unsubscribe = this.db.collection('users')
+                .doc(this.currentUser.id)
+                .collection(collection)
+                .onSnapshot((snapshot) => {
+                    const data = [];
+                    snapshot.forEach((doc) => {
+                        data.push({ id: doc.id, ...doc.data() });
+                    });
+                    callback(data);
+                }, (error) => {
+                    console.error('Error listening to data changes:', error);
+                });
+
+            return unsubscribe;
+        } catch (error) {
+            console.error('Error setting up data subscription:', error);
+            return null;
+        }
+    }
+
+    // Enhanced data storage with real-time sync
     async setUserData(collection, data) {
-        if (!this.currentUser) {
-            console.warn('No authenticated user - cannot save data');
+        if (!this.isFirebaseReady || !this.currentUser) {
+            console.warn('Firebase not ready or user not authenticated');
             return false;
         }
 
         try {
-            const userCollection = this.db.collection('users').doc(this.currentUser.id).collection(collection);
-            
-            if (Array.isArray(data)) {
-                // Save array data - use batch write for better performance
-                const batch = this.db.batch();
-                
-                // Clear existing data
-                const existingDocs = await userCollection.get();
-                existingDocs.forEach(doc => {
-                    batch.delete(doc.ref);
+            // Store data in Firestore with user-specific collection
+            await this.db.collection('users')
+                .doc(this.currentUser.id)
+                .collection(collection)
+                .doc('data')
+                .set({
+                    data: data,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                    userId: this.currentUser.id
                 });
-                
-                // Add new data
-                data.forEach(item => {
-                    const docRef = userCollection.doc(item.id?.toString() || userCollection.doc().id);
-                    batch.set(docRef, item);
-                });
-                
-                await batch.commit();
-            } else {
-                // Save single document
-                await userCollection.doc('data').set(data);
-            }
 
+            console.log(`✅ Data saved to Firebase: ${collection}`);
             return true;
-
         } catch (error) {
-            console.error('Error saving user data:', error);
+            console.error('Error saving data to Firebase:', error);
             return false;
         }
     }
 
+    // Enhanced data retrieval with caching
     async getUserData(collection, defaultValue = null) {
-        if (!this.currentUser) {
+        if (!this.isFirebaseReady || !this.currentUser) {
+            console.warn('Firebase not ready or user not authenticated');
             return defaultValue;
         }
 
         try {
-            const userCollection = this.db.collection('users').doc(this.currentUser.id).collection(collection);
-            
-            if (collection === 'gl_accounts' || collection === 'gl_journal_entries') {
-                // Array data
-                const snapshot = await userCollection.get();
-                const data = [];
-                snapshot.forEach(doc => {
-                    data.push({ id: doc.id, ...doc.data() });
-                });
-                return data.length > 0 ? data : defaultValue;
-            } else {
-                // Single document data
-                const doc = await userCollection.doc('data').get();
-                return doc.exists ? doc.data() : defaultValue;
-            }
+            const doc = await this.db.collection('users')
+                .doc(this.currentUser.id)
+                .collection(collection)
+                .doc('data')
+                .get();
 
+            if (doc.exists) {
+                const data = doc.data();
+                console.log(`✅ Data loaded from Firebase: ${collection}`);
+                return data.data || defaultValue;
+            } else {
+                console.log(`No data found in Firebase for: ${collection}`);
+                return defaultValue;
+            }
         } catch (error) {
-            console.error('Error loading user data:', error);
+            console.error('Error loading data from Firebase:', error);
             return defaultValue;
         }
     }
@@ -383,23 +399,6 @@ class FirebaseAuthSystem {
             console.error('Error clearing user data:', error);
             return false;
         }
-    }
-
-    // Real-time data sync
-    subscribeToUserData(collection, callback) {
-        if (!this.currentUser) return null;
-
-        const userCollection = this.db.collection('users').doc(this.currentUser.id).collection(collection);
-        
-        return userCollection.onSnapshot((snapshot) => {
-            const data = [];
-            snapshot.forEach(doc => {
-                data.push({ id: doc.id, ...doc.data() });
-            });
-            callback(data);
-        }, (error) => {
-            console.error('Real-time sync error:', error);
-        });
     }
 
     // Get current user (safe)

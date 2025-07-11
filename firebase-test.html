@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Authentication Test - Fung's Accounting</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .test-section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .status.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Firebase Authentication Test</h1>
+        <p>This page tests the Firebase integration for Fung's Accounting app.</p>
+
+        <!-- Firebase Status -->
+        <div class="test-section">
+            <h3>Firebase Status</h3>
+            <div id="firebaseStatus" class="status info">Checking Firebase connection...</div>
+        </div>
+
+        <!-- Authentication Test -->
+        <div class="test-section">
+            <h3>Authentication Test</h3>
+            <div id="authStatus" class="status info">Not authenticated</div>
+            
+            <div id="loginForm" style="display: none;">
+                <h4>Login</h4>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="password">
+                </div>
+                <button onclick="testLogin()" class="btn btn-primary">Login</button>
+            </div>
+
+            <div id="registerForm" style="display: none;">
+                <h4>Register</h4>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="registerEmail" class="form-control" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="registerPassword" class="form-control" placeholder="password (min 6 chars)">
+                </div>
+                <div class="form-group">
+                    <label>Full Name:</label>
+                    <input type="text" id="registerName" class="form-control" placeholder="Your Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Business Name:</label>
+                    <input type="text" id="registerBusiness" class="form-control" placeholder="Your Business Name">
+                </div>
+                <button onclick="testRegister()" class="btn btn-success">Register</button>
+            </div>
+
+            <div id="userInfo" style="display: none;">
+                <h4>User Information</h4>
+                <div id="userDetails"></div>
+                <button onclick="testLogout()" class="btn btn-warning">Logout</button>
+            </div>
+        </div>
+
+        <!-- Data Storage Test -->
+        <div class="test-section">
+            <h3>Data Storage Test</h3>
+            <div id="dataStatus" class="status info">Not tested</div>
+            
+            <div id="dataTest" style="display: none;">
+                <button onclick="testSaveData()" class="btn btn-primary">Save Test Data</button>
+                <button onclick="testLoadData()" class="btn btn-info">Load Data</button>
+                <button onclick="testRealTimeSync()" class="btn btn-success">Test Real-time Sync</button>
+            </div>
+        </div>
+
+        <!-- Console Output -->
+        <div class="test-section">
+            <h3>Console Output</h3>
+            <div id="consoleOutput" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Firebase Auth System -->
+    <script src="firebase-auth.js"></script>
+    
+    <!-- Test Scripts -->
+    <script>
+        let authSystem = null;
+        let testData = {
+            accounts: [
+                { id: 1, name: 'Test Cash Account', type: 'Asset', balance: 1000 },
+                { id: 2, name: 'Test Revenue Account', type: 'Revenue', balance: 5000 }
+            ],
+            journalEntries: [
+                { id: 1, date: '2024-01-01', description: 'Test Entry', amount: 1000 }
+            ]
+        };
+
+        // Override console.log to capture output
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('consoleOutput');
+
+        function addToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : 'black';
+            consoleOutput.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '));
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        // Test Firebase connection
+        function testFirebaseConnection() {
+            const statusDiv = document.getElementById('firebaseStatus');
+            
+            if (typeof firebase !== 'undefined') {
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '✅ Firebase SDK loaded successfully';
+                
+                // Test Firebase services
+                try {
+                    const auth = firebase.auth();
+                    const db = firebase.firestore();
+                    statusDiv.innerHTML += '<br>✅ Firebase Auth and Firestore initialized';
+                } catch (error) {
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '❌ Firebase services failed to initialize: ' + error.message;
+                }
+            } else {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Firebase SDK not loaded';
+            }
+        }
+
+        // Test authentication
+        function testAuthentication() {
+            const authStatusDiv = document.getElementById('authStatus');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const userInfo = document.getElementById('userInfo');
+
+            if (authSystem && authSystem.currentUser) {
+                authStatusDiv.className = 'status success';
+                authStatusDiv.innerHTML = `✅ Authenticated as: ${authSystem.currentUser.email}`;
+                
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'none';
+                userInfo.style.display = 'block';
+                
+                document.getElementById('userDetails').innerHTML = `
+                    <p><strong>Email:</strong> ${authSystem.currentUser.email}</p>
+                    <p><strong>Name:</strong> ${authSystem.currentUser.fullName}</p>
+                    <p><strong>Business:</strong> ${authSystem.currentUser.businessName}</p>
+                    <p><strong>User ID:</strong> ${authSystem.currentUser.id}</p>
+                `;
+                
+                document.getElementById('dataTest').style.display = 'block';
+            } else {
+                authStatusDiv.className = 'status info';
+                authStatusDiv.innerHTML = 'Not authenticated';
+                
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'block';
+                userInfo.style.display = 'none';
+                document.getElementById('dataTest').style.display = 'none';
+            }
+        }
+
+        // Test functions
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+            
+            try {
+                const result = await authSystem.login({ username: email, password: password });
+                if (result.success) {
+                    testAuthentication();
+                } else {
+                    alert('Login failed: ' + result.message);
+                }
+            } catch (error) {
+                alert('Login error: ' + error.message);
+            }
+        }
+
+        async function testRegister() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const name = document.getElementById('registerName').value;
+            const business = document.getElementById('registerBusiness').value;
+            
+            if (!email || !password || !name) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            try {
+                const result = await authSystem.register({
+                    email: email,
+                    password: password,
+                    fullName: name,
+                    businessName: business
+                });
+                
+                if (result.success) {
+                    testAuthentication();
+                } else {
+                    alert('Registration failed: ' + result.message);
+                }
+            } catch (error) {
+                alert('Registration error: ' + error.message);
+            }
+        }
+
+        async function testLogout() {
+            try {
+                await authSystem.logout();
+                testAuthentication();
+            } catch (error) {
+                alert('Logout error: ' + error.message);
+            }
+        }
+
+        async function testSaveData() {
+            const statusDiv = document.getElementById('dataStatus');
+            
+            try {
+                await authSystem.setUserData('test_accounts', testData.accounts);
+                await authSystem.setUserData('test_entries', testData.journalEntries);
+                
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '✅ Test data saved successfully';
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Failed to save test data: ' + error.message;
+            }
+        }
+
+        async function testLoadData() {
+            const statusDiv = document.getElementById('dataStatus');
+            
+            try {
+                const accounts = await authSystem.getUserData('test_accounts', []);
+                const entries = await authSystem.getUserData('test_entries', []);
+                
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `✅ Data loaded successfully<br>
+                    Accounts: ${accounts.length}<br>
+                    Entries: ${entries.length}`;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Failed to load data: ' + error.message;
+            }
+        }
+
+        function testRealTimeSync() {
+            const statusDiv = document.getElementById('dataStatus');
+            
+            try {
+                const unsubscribe = authSystem.subscribeToUserData('test_accounts', (data) => {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ Real-time sync working! Data updated: ' + new Date().toLocaleTimeString();
+                });
+                
+                statusDiv.className = 'status info';
+                statusDiv.innerHTML = '🔄 Real-time sync enabled. Try saving data in another tab to test.';
+                
+                // Clean up after 10 seconds
+                setTimeout(() => {
+                    if (unsubscribe) unsubscribe();
+                }, 10000);
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Real-time sync failed: ' + error.message;
+            }
+        }
+
+        // Initialize test
+        document.addEventListener('DOMContentLoaded', function() {
+            testFirebaseConnection();
+            
+            // Wait for auth system to initialize
+            setTimeout(() => {
+                authSystem = window.authSystem;
+                testAuthentication();
+                
+                // Set up periodic checks
+                setInterval(testAuthentication, 2000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
