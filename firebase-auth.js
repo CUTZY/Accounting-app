@@ -39,24 +39,20 @@ class FirebaseAuthSystem {
     // Initialize Firebase services
     initializeFirebase() {
         try {
-            this.auth = firebase.auth();
-            this.db = firebase.firestore();
+            // Use the already initialized Firebase instance from firebase-config.js
+            this.auth = window.firebaseAuth || firebase.auth();
+            this.db = window.firebaseDb || firebase.firestore();
             this.isFirebaseReady = true;
             
-            console.log('✅ Firebase initialized successfully');
+            console.log('✅ Firebase services connected successfully');
             
             // Set up authentication state listener
             this.auth.onAuthStateChanged((user) => {
                 this.handleAuthStateChange(user);
             });
             
-            // Enable offline persistence
-            this.db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-                console.warn('Firebase offline persistence failed:', err);
-            });
-            
         } catch (error) {
-            console.error('Firebase initialization failed:', error);
+            console.error('Firebase services connection failed:', error);
             this.fallbackToLocalStorage();
         }
     }
