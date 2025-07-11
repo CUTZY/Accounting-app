@@ -27,19 +27,30 @@ class AccountingApp {
 
     // Load user-specific data after authentication
     async loadUserData() {
+        console.log('🔄 Loading user data...');
+        console.log('Auth system:', window.authSystem);
+        console.log('Current user:', window.authSystem?.currentUser);
+        
         if (!authSystem || !authSystem.currentUser) {
             console.warn('No authenticated user found');
             return;
         }
 
         try {
-            // Load user-specific data from Firebase with async/await
+            console.log('📥 Loading accounts from Firebase...');
             this.accounts = await authSystem.getUserData('gl_accounts', []);
+            console.log('📥 Loading journal entries from Firebase...');
             this.journalEntries = await authSystem.getUserData('gl_journal_entries', []);
+            console.log('📥 Loading next IDs from Firebase...');
             this.nextEntryId = await authSystem.getUserData('gl_next_entry_id', 1);
             this.nextAccountId = await authSystem.getUserData('gl_next_account_id', 1);
             
-            console.log('✅ User data loaded from Firebase');
+            console.log('✅ User data loaded from Firebase:', {
+                accounts: this.accounts.length,
+                entries: this.journalEntries.length,
+                nextEntryId: this.nextEntryId,
+                nextAccountId: this.nextAccountId
+            });
             
             // Set up real-time data synchronization
             this.setupRealTimeSync();
@@ -47,7 +58,7 @@ class AccountingApp {
             // Now that data is loaded, initialize the full app
             this.initializeApp();
         } catch (error) {
-            console.error('Error loading user data:', error);
+            console.error('❌ Error loading user data:', error);
             // Fallback to empty data
             this.accounts = [];
             this.journalEntries = [];
@@ -520,21 +531,27 @@ class AccountingApp {
 
     // Save data to user-specific storage
     async saveData() {
+        console.log('💾 Saving data to Firebase...');
+        console.log('Auth system:', window.authSystem);
+        console.log('Current user:', window.authSystem?.currentUser);
+        
         if (!authSystem || !authSystem.currentUser) {
             console.warn('No authenticated user - cannot save data');
             return;
         }
 
         try {
-            // Save user-specific data through the authentication system
+            console.log('💾 Saving accounts to Firebase...');
             await authSystem.setUserData('gl_accounts', this.accounts);
+            console.log('💾 Saving journal entries to Firebase...');
             await authSystem.setUserData('gl_journal_entries', this.journalEntries);
+            console.log('💾 Saving next IDs to Firebase...');
             await authSystem.setUserData('gl_next_entry_id', this.nextEntryId);
             await authSystem.setUserData('gl_next_account_id', this.nextAccountId);
             
             console.log('✅ Data saved to Firebase successfully');
         } catch (error) {
-            console.error('Error saving data to Firebase:', error);
+            console.error('❌ Error saving data to Firebase:', error);
         }
     }
 
@@ -1706,6 +1723,19 @@ function editJournalEntry(entryId) {
 document.addEventListener('DOMContentLoaded', function() {
     app = new AccountingApp();
     
-    // Note: User data will be loaded automatically when authentication system 
-    // calls app.loadUserData() after successful login
+    // Wait for auth system to be ready before proceeding
+    const waitForAuthSystem = () => {
+        if (window.authSystem && window.authSystem.isReady && window.authSystem.isReady()) {
+            console.log('✅ Auth system ready, app initialization complete');
+            // Auth system will automatically call app.loadUserData() after login
+        } else if (window.authSystem && window.authSystem.isFirebaseReady) {
+            console.log('✅ Firebase auth system ready, app initialization complete');
+            // Auth system will automatically call app.loadUserData() after login
+        } else {
+            console.log('⏳ Waiting for auth system to be ready...');
+            setTimeout(waitForAuthSystem, 100);
+        }
+    };
+    
+    waitForAuthSystem();
 });
