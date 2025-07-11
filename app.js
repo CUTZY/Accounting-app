@@ -26,24 +26,68 @@ class AccountingApp {
     }
 
     // Load user-specific data after authentication
-    loadUserData() {
+    async loadUserData() {
         if (!authSystem || !authSystem.currentUser) {
             console.warn('No authenticated user found');
             return;
         }
 
-        // Load user-specific data from authenticated storage
-        this.accounts = authSystem.getUserData('gl_accounts', []);
-        this.journalEntries = authSystem.getUserData('gl_journal_entries', []);
-        this.nextEntryId = authSystem.getUserData('gl_next_entry_id', 1);
-        this.nextAccountId = authSystem.getUserData('gl_next_account_id', 1);
-        
-        // Now that data is loaded, initialize the full app
-        this.initializeApp();
+        try {
+            // Load user-specific data from Firebase with async/await
+            this.accounts = await authSystem.getUserData('gl_accounts', []);
+            this.journalEntries = await authSystem.getUserData('gl_journal_entries', []);
+            this.nextEntryId = await authSystem.getUserData('gl_next_entry_id', 1);
+            this.nextAccountId = await authSystem.getUserData('gl_next_account_id', 1);
+            
+            console.log('✅ User data loaded from Firebase');
+            
+            // Set up real-time data synchronization
+            this.setupRealTimeSync();
+            
+            // Now that data is loaded, initialize the full app
+            this.initializeApp();
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            // Fallback to empty data
+            this.accounts = [];
+            this.journalEntries = [];
+            this.nextEntryId = 1;
+            this.nextAccountId = 1;
+            this.initializeApp();
+        }
+    }
+
+    // Set up real-time data synchronization
+    setupRealTimeSync() {
+        if (!authSystem || !authSystem.currentUser) return;
+
+        // Listen for real-time updates to accounts
+        this.accountsUnsubscribe = authSystem.subscribeToUserData('gl_accounts', (accounts) => {
+            if (accounts && accounts.length > 0) {
+                this.accounts = accounts[0].data || [];
+                this.loadAccountsList();
+                this.updateDashboardSummary();
+            }
+        });
+
+        // Listen for real-time updates to journal entries
+        this.entriesUnsubscribe = authSystem.subscribeToUserData('gl_journal_entries', (entries) => {
+            if (entries && entries.length > 0) {
+                this.journalEntries = entries[0].data || [];
+                this.loadJournalEntries();
+                this.updateDashboardSummary();
+            }
+        });
+
+        console.log('✅ Real-time data synchronization enabled');
     }
 
     // Clear user data from memory (called during logout)
     clearUserData() {
+        // Clean up real-time listeners
+        this.cleanupRealTimeSync();
+        
+        // Clear data from memory
         this.accounts = [];
         this.journalEntries = [];
         this.nextEntryId = 1;
@@ -475,17 +519,36 @@ class AccountingApp {
     }
 
     // Save data to user-specific storage
-    saveData() {
+    async saveData() {
         if (!authSystem || !authSystem.currentUser) {
             console.warn('No authenticated user - cannot save data');
             return;
         }
 
-        // Save user-specific data through the authentication system
-        authSystem.setUserData('gl_accounts', this.accounts);
-        authSystem.setUserData('gl_journal_entries', this.journalEntries);
-        authSystem.setUserData('gl_next_entry_id', this.nextEntryId);
-        authSystem.setUserData('gl_next_account_id', this.nextAccountId);
+        try {
+            // Save user-specific data through the authentication system
+            await authSystem.setUserData('gl_accounts', this.accounts);
+            await authSystem.setUserData('gl_journal_entries', this.journalEntries);
+            await authSystem.setUserData('gl_next_entry_id', this.nextEntryId);
+            await authSystem.setUserData('gl_next_account_id', this.nextAccountId);
+            
+            console.log('✅ Data saved to Firebase successfully');
+        } catch (error) {
+            console.error('Error saving data to Firebase:', error);
+        }
+    }
+
+    // Clean up real-time listeners
+    cleanupRealTimeSync() {
+        if (this.accountsUnsubscribe) {
+            this.accountsUnsubscribe();
+            this.accountsUnsubscribe = null;
+        }
+        if (this.entriesUnsubscribe) {
+            this.entriesUnsubscribe();
+            this.entriesUnsubscribe = null;
+        }
+        console.log('✅ Real-time data synchronization cleaned up');
     }
 
     // Navigation functions
