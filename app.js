@@ -3,10 +3,11 @@
 
 class AccountingApp {
     constructor() {
-        this.accounts = JSON.parse(localStorage.getItem('gl_accounts')) || [];
-        this.journalEntries = JSON.parse(localStorage.getItem('gl_journal_entries')) || [];
-        this.nextEntryId = parseInt(localStorage.getItem('gl_next_entry_id')) || 1;
-        this.nextAccountId = parseInt(localStorage.getItem('gl_next_account_id')) || 1;
+        // Initialize empty state - data will be loaded after authentication
+        this.accounts = [];
+        this.journalEntries = [];
+        this.nextEntryId = 1;
+        this.nextAccountId = 1;
         
         // Initialize edit mode variables
         this.accountEditMode = false;
@@ -14,7 +15,39 @@ class AccountingApp {
         this.entryEditMode = false;
         this.editingEntryId = null;
         
+        // Only initialize basic UI elements, not data-dependent ones
+        this.initializeAppBasics();
+    }
+
+    // Basic initialization that doesn't depend on user data
+    initializeAppBasics() {
+        // Set up modal event listeners
+        this.setupModalEventListeners();
+    }
+
+    // Load user-specific data after authentication
+    loadUserData() {
+        if (!authSystem || !authSystem.currentUser) {
+            console.warn('No authenticated user found');
+            return;
+        }
+
+        // Load user-specific data from authenticated storage
+        this.accounts = authSystem.getUserData('gl_accounts', []);
+        this.journalEntries = authSystem.getUserData('gl_journal_entries', []);
+        this.nextEntryId = authSystem.getUserData('gl_next_entry_id', 1);
+        this.nextAccountId = authSystem.getUserData('gl_next_account_id', 1);
+        
+        // Now that data is loaded, initialize the full app
         this.initializeApp();
+    }
+
+    // Clear user data from memory (called during logout)
+    clearUserData() {
+        this.accounts = [];
+        this.journalEntries = [];
+        this.nextEntryId = 1;
+        this.nextAccountId = 1;
     }
 
     // Initialize the application
@@ -69,6 +102,12 @@ class AccountingApp {
 
     // Clear all data and start fresh
     clearAllData() {
+        // Check authentication
+        if (!authSystem || !authSystem.currentUser) {
+            this.showNotification('Please log in to manage your data.', 'warning');
+            return;
+        }
+
         // Check if there's any data to clear
         if (this.accounts.length === 0 && this.journalEntries.length === 0) {
             this.showNotification('No data to clear. The application is already empty.', 'info');
@@ -91,11 +130,11 @@ class AccountingApp {
         this.nextEntryId = 1;
         this.nextAccountId = 1;
         
-        // Clear localStorage
-        localStorage.removeItem('gl_accounts');
-        localStorage.removeItem('gl_journal_entries');
-        localStorage.removeItem('gl_next_entry_id');
-        localStorage.removeItem('gl_next_account_id');
+        // Clear user-specific data storage
+        authSystem.clearUserData('gl_accounts');
+        authSystem.clearUserData('gl_journal_entries');
+        authSystem.clearUserData('gl_next_entry_id');
+        authSystem.clearUserData('gl_next_account_id');
         
         // Refresh all displays
         this.loadDashboard();
@@ -435,12 +474,18 @@ class AccountingApp {
         this.nextEntryId = 21;
     }
 
-    // Save data to localStorage
+    // Save data to user-specific storage
     saveData() {
-        localStorage.setItem('gl_accounts', JSON.stringify(this.accounts));
-        localStorage.setItem('gl_journal_entries', JSON.stringify(this.journalEntries));
-        localStorage.setItem('gl_next_entry_id', this.nextEntryId.toString());
-        localStorage.setItem('gl_next_account_id', this.nextAccountId.toString());
+        if (!authSystem || !authSystem.currentUser) {
+            console.warn('No authenticated user - cannot save data');
+            return;
+        }
+
+        // Save user-specific data through the authentication system
+        authSystem.setUserData('gl_accounts', this.accounts);
+        authSystem.setUserData('gl_journal_entries', this.journalEntries);
+        authSystem.setUserData('gl_next_entry_id', this.nextEntryId);
+        authSystem.setUserData('gl_next_account_id', this.nextAccountId);
     }
 
     // Navigation functions
@@ -1597,4 +1642,7 @@ function editJournalEntry(entryId) {
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     app = new AccountingApp();
+    
+    // Note: User data will be loaded automatically when authentication system 
+    // calls app.loadUserData() after successful login
 });
