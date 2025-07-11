@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Integration Test - Main App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Firebase Integration Test - Main App</h1>
+    <p>This page tests the Firebase integration for the main accounting app.</p>
+
+    <!-- Firebase Status -->
+    <div class="test-section">
+        <h3>Firebase Status</h3>
+        <div id="firebaseStatus" class="status info">Checking Firebase connection...</div>
+    </div>
+
+    <!-- Auth System Status -->
+    <div class="test-section">
+        <h3>Authentication System Status</h3>
+        <div id="authStatus" class="status info">Checking auth system...</div>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="testResults"></div>
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-section">
+        <h3>Test Actions</h3>
+        <button onclick="testFirebaseConnection()">Test Firebase Connection</button>
+        <button onclick="testAuthSystem()">Test Auth System</button>
+        <button onclick="testDataMethods()">Test Data Methods</button>
+        <button onclick="createTestUser()">Create Test User</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testDataStorage()">Test Data Storage</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Firebase Auth System -->
+    <script src="firebase-auth.js"></script>
+
+    <script>
+        let testResults = [];
+
+        function addTestResult(test, status, message) {
+            const result = { test, status, message, timestamp: new Date().toISOString() };
+            testResults.push(result);
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const container = document.getElementById('testResults');
+            container.innerHTML = testResults.map(result => `
+                <div class="test-result">
+                    <strong>${result.test}:</strong> 
+                    <span class="status ${result.status}">${result.message}</span>
+                    <small>${new Date(result.timestamp).toLocaleTimeString()}</small>
+                </div>
+            `).join('');
+        }
+
+        // Test Firebase connection
+        function testFirebaseConnection() {
+            const statusDiv = document.getElementById('firebaseStatus');
+            
+            if (typeof firebase !== 'undefined') {
+                try {
+                    const auth = firebase.auth();
+                    const db = firebase.firestore();
+                    statusDiv.innerHTML = '✅ Firebase SDK loaded and services initialized';
+                    statusDiv.className = 'status success';
+                    addTestResult('Firebase Connection', 'success', 'Firebase SDK loaded successfully');
+                } catch (error) {
+                    statusDiv.innerHTML = '❌ Firebase services failed to initialize: ' + error.message;
+                    statusDiv.className = 'status error';
+                    addTestResult('Firebase Connection', 'error', 'Firebase services failed: ' + error.message);
+                }
+            } else {
+                statusDiv.innerHTML = '❌ Firebase SDK not loaded';
+                statusDiv.className = 'status error';
+                addTestResult('Firebase Connection', 'error', 'Firebase SDK not loaded');
+            }
+        }
+
+        // Test auth system
+        function testAuthSystem() {
+            const statusDiv = document.getElementById('authStatus');
+            
+            if (window.authSystem) {
+                if (window.authSystem.isFirebaseReady) {
+                    statusDiv.innerHTML = '✅ Firebase auth system ready';
+                    statusDiv.className = 'status success';
+                    addTestResult('Auth System', 'success', 'Firebase auth system initialized');
+                } else {
+                    statusDiv.innerHTML = '⏳ Firebase auth system initializing...';
+                    statusDiv.className = 'status warning';
+                    addTestResult('Auth System', 'warning', 'Firebase auth system still initializing');
+                }
+            } else {
+                statusDiv.innerHTML = '❌ Auth system not available';
+                statusDiv.className = 'status error';
+                addTestResult('Auth System', 'error', 'Auth system not available');
+            }
+        }
+
+        // Test data methods
+        function testDataMethods() {
+            if (!window.authSystem) {
+                addTestResult('Data Methods', 'error', 'Auth system not available');
+                return;
+            }
+
+            const methods = ['getUserData', 'setUserData', 'subscribeToUserData', 'clearUserData'];
+            let allMethodsExist = true;
+
+            methods.forEach(method => {
+                if (typeof window.authSystem[method] === 'function') {
+                    addTestResult(`Data Method: ${method}`, 'success', 'Method available');
+                } else {
+                    addTestResult(`Data Method: ${method}`, 'error', 'Method not found');
+                    allMethodsExist = false;
+                }
+            });
+
+            if (allMethodsExist) {
+                addTestResult('Data Methods', 'success', 'All required data methods available');
+            } else {
+                addTestResult('Data Methods', 'error', 'Some data methods missing');
+            }
+        }
+
+        // Create test user
+        async function createTestUser() {
+            if (!window.authSystem) {
+                addTestResult('Create Test User', 'error', 'Auth system not available');
+                return;
+            }
+
+            try {
+                const result = await window.authSystem.createDemoUser();
+                if (result.success) {
+                    addTestResult('Create Test User', 'success', 'Demo user created: ' + result.message);
+                } else {
+                    addTestResult('Create Test User', 'error', 'Failed to create demo user: ' + result.message);
+                }
+            } catch (error) {
+                addTestResult('Create Test User', 'error', 'Error creating demo user: ' + error.message);
+            }
+        }
+
+        // Test login
+        async function testLogin() {
+            if (!window.authSystem) {
+                addTestResult('Test Login', 'error', 'Auth system not available');
+                return;
+            }
+
+            try {
+                const result = await window.authSystem.login({
+                    username: 'demo@fungacct.com',
+                    password: 'Demo123!'
+                });
+                
+                if (result.success) {
+                    addTestResult('Test Login', 'success', 'Login successful: ' + result.message);
+                } else {
+                    addTestResult('Test Login', 'error', 'Login failed: ' + result.message);
+                }
+            } catch (error) {
+                addTestResult('Test Login', 'error', 'Login error: ' + error.message);
+            }
+        }
+
+        // Test data storage
+        async function testDataStorage() {
+            if (!window.authSystem || !window.authSystem.currentUser) {
+                addTestResult('Data Storage', 'error', 'Not authenticated');
+                return;
+            }
+
+            try {
+                // Test saving data
+                const testData = { test: 'data', timestamp: new Date().toISOString() };
+                const saveResult = await window.authSystem.setUserData('test_collection', testData);
+                
+                if (saveResult) {
+                    addTestResult('Data Storage: Save', 'success', 'Data saved successfully');
+                    
+                    // Test loading data
+                    const loadedData = await window.authSystem.getUserData('test_collection', null);
+                    if (loadedData && loadedData.test === 'data') {
+                        addTestResult('Data Storage: Load', 'success', 'Data loaded successfully');
+                    } else {
+                        addTestResult('Data Storage: Load', 'error', 'Data not loaded correctly');
+                    }
+                } else {
+                    addTestResult('Data Storage: Save', 'error', 'Failed to save data');
+                }
+            } catch (error) {
+                addTestResult('Data Storage', 'error', 'Storage error: ' + error.message);
+            }
+        }
+
+        // Auto-run tests when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                testFirebaseConnection();
+                testAuthSystem();
+                testDataMethods();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

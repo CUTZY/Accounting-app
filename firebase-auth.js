@@ -563,12 +563,16 @@ let firebaseAuthSystem;
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM loaded, initializing Firebase auth system...');
+    
     // Use Firebase auth if available, otherwise fallback to localStorage
     if (typeof firebase !== 'undefined') {
+        console.log('✅ Firebase SDK detected, creating Firebase auth system...');
         firebaseAuthSystem = new FirebaseAuthSystem();
         window.authSystem = firebaseAuthSystem;
+        console.log('✅ Firebase auth system created and assigned to window.authSystem');
     } else {
-        console.warn('Firebase not loaded - using localStorage auth system');
+        console.warn('❌ Firebase not loaded - using localStorage auth system');
         // The original AuthSystem will be used
     }
 });
@@ -628,6 +632,17 @@ function createFirebaseDemoUser() {
             } else {
                 showAuthMessage(result.message, 'danger');
             }
+        });
+    }
+}
+
+// Global logout function
+function performLogout() {
+    if (window.authSystem && window.authSystem.logout) {
+        window.authSystem.logout().then(() => {
+            console.log('User logged out successfully');
+        }).catch(error => {
+            console.error('Logout error:', error);
         });
     }
 }
