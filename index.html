@@ -36,15 +36,15 @@
                       <form onsubmit="event.preventDefault(); performLogin();">
                         <div class="form-group">
                           <label for="loginUsername">
-                            <i class="fas fa-user"></i> Username or Email
+                            <i class="fas fa-envelope"></i> Email Address
                           </label>
                           <input 
-                            type="text" 
+                            type="email" 
                             class="form-control" 
                             id="loginUsername" 
-                            placeholder="Enter your username or email"
+                            placeholder="Enter your email address"
                             required
-                            autocomplete="username"
+                            autocomplete="email"
                           >
                         </div>
                         <div class="form-group">
@@ -125,19 +125,6 @@
                           </div>
                         </div>
                         <div class="form-group">
-                          <label for="registerUsername">
-                            <i class="fas fa-at"></i> Username
-                          </label>
-                          <input 
-                            type="text" 
-                            class="form-control" 
-                            id="registerUsername" 
-                            placeholder="Choose a username"
-                            required
-                            autocomplete="username"
-                          >
-                        </div>
-                        <div class="form-group">
                           <label for="registerEmail">
                             <i class="fas fa-envelope"></i> Email Address
                           </label>
@@ -209,7 +196,7 @@
                       <p class="text-muted text-center">
                         Enter your email address and we'll help you reset your password.
                       </p>
-                      <form onsubmit="event.preventDefault(); alert('Password reset feature coming soon!');">
+                      <form onsubmit="event.preventDefault(); performPasswordReset();">
                         <div class="form-group">
                           <label for="forgotEmail">
                             <i class="fas fa-envelope"></i> Email Address
@@ -1043,9 +1030,6 @@
     <!-- Firebase Auth System -->
     <script src="firebase-auth.js"></script>
     
-    <!-- LocalStorage Auth System (fallback) -->
-    <script src="auth.js"></script>
-    
     <!-- Other Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
@@ -1127,26 +1111,8 @@
         // Add login-page class to body initially
         document.body.classList.add('login-page');
         
-        // Wait for authentication system to initialize
-        setTimeout(function() {
-          if (window.authSystem) {
-            console.log('✅ Authentication system initialized');
-            
-            // Check if user is already logged in
-            if (window.authSystem.currentUser) {
-              console.log('✅ User already logged in, showing main app');
-              window.authSystem.showMainApp();
-            } else {
-              console.log('ℹ️ No user logged in, showing login screen');
-              window.authSystem.showLoginScreen();
-            }
-          } else {
-            console.log('⚠️ No authentication system found, showing login screen');
-            document.getElementById('loginContainer').style.display = 'block';
-            document.getElementById('mainApp').style.display = 'none';
-            document.body.classList.add('login-page');
-          }
-        }, 1000);
+        // Firebase auth system handles initialization automatically
+        console.log('🚀 Application initialized with Firebase authentication');
       });
 
              // Global form switching functions
@@ -1180,98 +1146,60 @@
          if (forgotForm) forgotForm.style.display = 'block';
        }
 
-       // Universal authentication functions that work with both Firebase and localStorage
-       function performLogin() {
-         const username = document.getElementById('loginUsername').value;
-         const password = document.getElementById('loginPassword').value;
+               // Firebase authentication functions
+        function performLogin() {
+          const username = document.getElementById('loginUsername').value;
+          const password = document.getElementById('loginPassword').value;
 
-         if (!username || !password) {
-           showAuthMessage('Please enter both username/email and password', 'danger');
-           return;
-         }
+          if (!username || !password) {
+            showAuthMessage('Please enter both email and password', 'danger');
+            return;
+          }
 
-         if (window.authSystem && window.authSystem.login) {
-           window.authSystem.login({ username, password }).then(result => {
-             if (result.success) {
-               showAuthMessage(result.message, 'success');
-             } else {
-               showAuthMessage(result.message, 'danger');
-             }
-           }).catch(error => {
-             console.error('Login error:', error);
-             showAuthMessage('Login failed. Please try again.', 'danger');
-           });
-         } else {
-           showAuthMessage('Authentication system not available', 'danger');
-         }
-       }
+          // Call Firebase login function directly
+          performFirebaseLogin();
+        }
 
-       function performRegister() {
-         const userData = {
-           username: document.getElementById('registerUsername').value,
-           email: document.getElementById('registerEmail').value,
-           password: document.getElementById('registerPassword').value,
-           confirmPassword: document.getElementById('registerConfirmPassword').value,
-           fullName: document.getElementById('registerFullName').value,
-           businessName: document.getElementById('registerBusinessName').value
-         };
+        function performRegister() {
+          const userData = {
+            email: document.getElementById('registerEmail').value,
+            password: document.getElementById('registerPassword').value,
+            confirmPassword: document.getElementById('registerConfirmPassword').value,
+            fullName: document.getElementById('registerFullName').value,
+            businessName: document.getElementById('registerBusinessName').value
+          };
 
-         // Basic validation
-         if (!userData.username || !userData.email || !userData.password || !userData.fullName) {
-           showAuthMessage('Please fill in all required fields', 'danger');
-           return;
-         }
+          // Basic validation
+          if (!userData.email || !userData.password || !userData.fullName) {
+            showAuthMessage('Please fill in all required fields', 'danger');
+            return;
+          }
 
-         if (userData.password !== userData.confirmPassword) {
-           showAuthMessage('Passwords do not match', 'danger');
-           return;
-         }
+          if (userData.password !== userData.confirmPassword) {
+            showAuthMessage('Passwords do not match', 'danger');
+            return;
+          }
 
-         if (window.authSystem && window.authSystem.register) {
-           window.authSystem.register(userData).then(result => {
-             if (result.success) {
-               showAuthMessage(result.message, 'success');
-             } else {
-               showAuthMessage(result.message, 'danger');
-             }
-           }).catch(error => {
-             console.error('Registration error:', error);
-             showAuthMessage('Registration failed. Please try again.', 'danger');
-           });
-         } else {
-           showAuthMessage('Authentication system not available', 'danger');
-         }
-       }
+          // Call Firebase register function directly
+          performFirebaseRegister();
+        }
 
-       function createDemoUser() {
-         if (window.authSystem && window.authSystem.createDemoUser) {
-           window.authSystem.createDemoUser().then(result => {
-             if (result.success) {
-               showAuthMessage('Demo user created and logged in successfully!', 'success');
-             } else {
-               showAuthMessage(result.message, 'danger');
-             }
-           }).catch(error => {
-             console.error('Demo user creation error:', error);
-             showAuthMessage('Failed to create demo user. Please try again.', 'danger');
-           });
-         } else {
-           showAuthMessage('Authentication system not available', 'danger');
-         }
-       }
+        function createDemoUser() {
+          // Call Firebase demo user function directly
+          createFirebaseDemoUser();
+        }
 
-       function performLogout() {
-         if (window.authSystem && window.authSystem.logout) {
-           window.authSystem.logout().then(() => {
-             showAuthMessage('You have been logged out successfully', 'info');
-           }).catch(error => {
-             console.error('Logout error:', error);
-             window.location.reload(); // Force reload if logout fails
-           });
-         } else {
-           showAuthMessage('Authentication system not available', 'danger');
-         }
-       }
+        function performLogout() {
+          // Call Firebase logout function directly
+          if (window.authSystem && window.authSystem.logout) {
+            window.authSystem.logout().then(() => {
+              showAuthMessage('You have been logged out successfully', 'info');
+            }).catch(error => {
+              console.error('Logout error:', error);
+              window.location.reload(); // Force reload if logout fails
+            });
+          }
+        }
     </script>
     
 <script src="app.js"></script>

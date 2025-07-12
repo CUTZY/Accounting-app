@@ -51,10 +51,27 @@ class FirebaseAuthSystem {
                 this.handleAuthStateChange(user);
             });
             
+            // Set up network state monitoring
+            this.setupNetworkMonitoring();
+            
         } catch (error) {
             console.error('Firebase services connection failed:', error);
-            this.fallbackToLocalStorage();
+            this.handleFirebaseFailure();
         }
+    }
+
+    // Monitor network connectivity
+    setupNetworkMonitoring() {
+        window.addEventListener('online', () => {
+            console.log('✅ Network connection restored');
+            if (!this.isFirebaseReady) {
+                location.reload(); // Reload to retry Firebase connection
+            }
+        });
+
+        window.addEventListener('offline', () => {
+            console.warn('⚠️ Network connection lost');
+        });
     }
 
     // Handle authentication state changes
@@ -423,14 +440,24 @@ class FirebaseAuthSystem {
             case 'auth/invalid-email':
                 return 'Please enter a valid email address.';
             case 'auth/user-not-found':
+                return 'No account found with this email address. Please check your email or create a new account.';
             case 'auth/wrong-password':
-                return 'Invalid email or password. Please check your credentials.';
+                return 'Incorrect password. Please try again or reset your password.';
             case 'auth/too-many-requests':
-                return 'Too many failed attempts. Please try again later.';
+                return 'Too many failed attempts. Please try again later or reset your password.';
             case 'auth/requires-recent-login':
                 return 'Please log out and log in again to change your password.';
+            case 'auth/network-request-failed':
+                return 'Network error. Please check your internet connection and try again.';
+            case 'auth/internal-error':
+                return 'Internal error occurred. Please try again later.';
+            case 'auth/missing-email':
+                return 'Please enter an email address.';
+            case 'auth/invalid-credential':
+                return 'Invalid login credentials. Please check your email and password.';
             default:
-                return 'An error occurred. Please try again.';
+                console.error('Unhandled auth error:', errorCode);
+                return 'An unexpected error occurred. Please try again or contact support if the problem persists.';
         }
     }
 
@@ -476,15 +503,48 @@ class FirebaseAuthSystem {
         });
     }
 
-    // Fallback to localStorage if Firebase fails
-    fallbackToLocalStorage() {
-        console.warn('⚠️ Firebase unavailable - falling back to localStorage');
+    // Handle Firebase initialization failure
+    handleFirebaseFailure() {
+        console.error('❌ Firebase authentication failed to initialize');
         
-        // Load the original localStorage auth system
-        if (typeof AuthSystem !== 'undefined') {
-            window.authSystem = new AuthSystem();
-        } else {
-            console.error('No fallback authentication system available');
+        // Show error message to user
+        const loginContainer = document.getElementById('loginContainer');
+        if (loginContainer) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `
+                <h5><i class="fas fa-exclamation-triangle"></i> Connection Error</h5>
+                <p>Unable to connect to authentication service. Please check your internet connection and try again.</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-refresh"></i> Retry
+                </button>
+            `;
+            
+            const authMessages = document.querySelector('.auth-messages');
+            if (authMessages) {
+                authMessages.appendChild(errorDiv);
+            }
+        }
+    }
+
+    // Password Reset
+    async resetPassword(email) {
+        if (!this.isFirebaseReady) {
+            return { success: false, message: 'Database connection not ready' };
+        }
+
+        try {
+            await this.auth.sendPasswordResetEmail(email);
+            return { 
+                success: true, 
+                message: 'Password reset email sent! Please check your inbox.' 
+            };
+        } catch (error) {
+            console.error('Password reset error:', error);
+            return { 
+                success: false, 
+                message: this.getErrorMessage(error.code) 
+            };
         }
     }
 
@@ -565,15 +625,33 @@ let firebaseAuthSystem;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM loaded, initializing Firebase auth system...');
     
-    // Use Firebase auth if available, otherwise fallback to localStorage
+    // Check if Firebase SDK is loaded
     if (typeof firebase !== 'undefined') {
         console.log('✅ Firebase SDK detected, creating Firebase auth system...');
         firebaseAuthSystem = new FirebaseAuthSystem();
         window.authSystem = firebaseAuthSystem;
         console.log('✅ Firebase auth system created and assigned to window.authSystem');
     } else {
-        console.warn('❌ Firebase not loaded - using localStorage auth system');
-        // The original AuthSystem will be used
+        console.error('❌ Firebase SDK not loaded. Please check your internet connection.');
+        
+        // Show error message to user
+        const loginContainer = document.getElementById('loginContainer');
+        if (loginContainer) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `
+                <h5><i class="fas fa-exclamation-triangle"></i> Setup Error</h5>
+                <p>Authentication system could not be loaded. Please refresh the page or check your internet connection.</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-refresh"></i> Refresh Page
+                </button>
+            `;
+            
+            const authMessages = document.querySelector('.auth-messages');
+            if (authMessages) {
+                authMessages.appendChild(errorDiv);
+            }
+        }
     }
 });
 
@@ -643,6 +721,30 @@ function performLogout() {
             console.log('User logged out successfully');
         }).catch(error => {
             console.error('Logout error:', error);
+        });
+    }
+}
+
+// Password reset function
+function performPasswordReset() {
+    const email = document.getElementById('forgotEmail').value;
+
+    if (!email) {
+        showAuthMessage('Please enter your email address', 'danger');
+        return;
+    }
+
+    if (window.authSystem && window.authSystem.resetPassword) {
+        window.authSystem.resetPassword(email).then(result => {
+            if (result.success) {
+                showAuthMessage(result.message, 'success');
+                // Switch back to login form after successful reset
+                setTimeout(() => {
+                    showLoginForm();
+                }, 3000);
+            } else {
+                showAuthMessage(result.message, 'danger');
+            }
         });
     }
 }
