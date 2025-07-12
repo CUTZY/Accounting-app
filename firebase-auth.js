@@ -1,5 +1,5 @@
 // Firebase Authentication and Database System for Fung's Accounting App
-// Replaces localStorage with cloud-based Firebase Firestore
+// Firebase Firestore cloud-based authentication and data storage system
 
 class FirebaseAuthSystem {
     constructor() {
@@ -28,8 +28,8 @@ class FirebaseAuthSystem {
                 setTimeout(checkFirebase, 100);
             } else {
                 console.error('Firebase failed to load after 5 seconds');
-                // Fallback to localStorage auth system
-                this.fallbackToLocalStorage();
+                // Handle Firebase initialization failure
+                this.handleFirebaseFailure();
             }
         };
         
@@ -42,6 +42,10 @@ class FirebaseAuthSystem {
             // Use the already initialized Firebase instance from firebase-config.js
             this.auth = window.firebaseAuth || firebase.auth();
             this.db = window.firebaseDb || firebase.firestore();
+            
+            // Enable offline persistence for better offline experience
+            this.enableOfflineSupport();
+            
             this.isFirebaseReady = true;
             
             console.log('✅ Firebase services connected successfully');
@@ -57,6 +61,28 @@ class FirebaseAuthSystem {
         } catch (error) {
             console.error('Firebase services connection failed:', error);
             this.handleFirebaseFailure();
+        }
+    }
+
+    // Enable offline support
+    enableOfflineSupport() {
+        try {
+            // Enable offline persistence
+            this.db.enablePersistence({ synchronizeTabs: true })
+                .then(() => {
+                    console.log('✅ Offline persistence enabled');
+                })
+                .catch((error) => {
+                    if (error.code === 'failed-precondition') {
+                        console.warn('⚠️ Offline persistence failed: Multiple tabs open');
+                    } else if (error.code === 'unimplemented') {
+                        console.warn('⚠️ Offline persistence not supported in this browser');
+                    } else {
+                        console.warn('⚠️ Offline persistence failed:', error);
+                    }
+                });
+        } catch (error) {
+            console.warn('⚠️ Could not enable offline persistence:', error);
         }
     }
 
@@ -342,7 +368,7 @@ class FirebaseAuthSystem {
         }
     }
 
-    // Enhanced data storage with real-time sync
+    // Enhanced data storage with real-time sync and offline support
     async setUserData(collection, data) {
         if (!this.isFirebaseReady || !this.currentUser) {
             console.warn('Firebase not ready or user not authenticated');
@@ -350,26 +376,43 @@ class FirebaseAuthSystem {
         }
 
         try {
+            // Prepare document data with metadata
+            const documentData = {
+                data: data,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: this.currentUser.id,
+                version: Date.now(), // Version for conflict resolution
+                dataSize: JSON.stringify(data).length // Track data size
+            };
+
             // Store data in Firestore with user-specific collection
             await this.db.collection('users')
                 .doc(this.currentUser.id)
                 .collection(collection)
                 .doc('data')
-                .set({
-                    data: data,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-                    userId: this.currentUser.id
-                });
+                .set(documentData);
 
-            console.log(`✅ Data saved to Firebase: ${collection}`);
+            console.log(`✅ Data saved to Firebase: ${collection} (${documentData.dataSize} bytes)`);
             return true;
         } catch (error) {
-            console.error('Error saving data to Firebase:', error);
+            console.error(`❌ Error saving data to Firebase (${collection}):`, error);
+            
+            // Show user-friendly error message
+            if (typeof showAuthMessage === 'function') {
+                if (error.code === 'permission-denied') {
+                    showAuthMessage('Permission denied. Please log in again.', 'danger');
+                } else if (error.code === 'unavailable') {
+                    showAuthMessage('Service temporarily unavailable. Your data will be saved when connection is restored.', 'warning');
+                } else {
+                    showAuthMessage('Failed to save data. Please try again.', 'danger');
+                }
+            }
+            
             return false;
         }
     }
 
-    // Enhanced data retrieval with caching
+    // Enhanced data retrieval with caching and offline support
     async getUserData(collection, defaultValue = null) {
         if (!this.isFirebaseReady || !this.currentUser) {
             console.warn('Firebase not ready or user not authenticated');
@@ -377,22 +420,48 @@ class FirebaseAuthSystem {
         }
 
         try {
+            // Use offline cache first, then sync with server
             const doc = await this.db.collection('users')
                 .doc(this.currentUser.id)
                 .collection(collection)
                 .doc('data')
-                .get();
+                .get({ source: 'cache' })
+                .catch(() => {
+                    // If cache fails, try server
+                    return this.db.collection('users')
+                        .doc(this.currentUser.id)
+                        .collection(collection)
+                        .doc('data')
+                        .get();
+                });
 
             if (doc.exists) {
-                const data = doc.data();
-                console.log(`✅ Data loaded from Firebase: ${collection}`);
-                return data.data || defaultValue;
+                const docData = doc.data();
+                const dataSize = docData.dataSize || 0;
+                const lastUpdated = docData.lastUpdated?.toDate?.() || new Date();
+                
+                console.log(`✅ Data loaded from Firebase: ${collection} (${dataSize} bytes, last updated: ${lastUpdated.toLocaleString()})`);
+                
+                // Return the actual data
+                return docData.data || defaultValue;
             } else {
-                console.log(`No data found in Firebase for: ${collection}`);
+                console.log(`📭 No data found in Firebase for: ${collection}`);
                 return defaultValue;
             }
         } catch (error) {
-            console.error('Error loading data from Firebase:', error);
+            console.error(`❌ Error loading data from Firebase (${collection}):`, error);
+            
+            // Show user-friendly error message
+            if (typeof showAuthMessage === 'function') {
+                if (error.code === 'permission-denied') {
+                    showAuthMessage('Permission denied. Please log in again.', 'danger');
+                } else if (error.code === 'unavailable') {
+                    showAuthMessage('Data service temporarily unavailable. Using cached data if available.', 'warning');
+                } else {
+                    showAuthMessage('Failed to load data from cloud. Please check your connection.', 'warning');
+                }
+            }
+            
             return defaultValue;
         }
     }
@@ -410,11 +479,98 @@ class FirebaseAuthSystem {
             });
             
             await batch.commit();
+            console.log(`✅ Cleared all data from Firebase collection: ${collection}`);
             return true;
 
         } catch (error) {
-            console.error('Error clearing user data:', error);
+            console.error(`❌ Error clearing user data (${collection}):`, error);
             return false;
+        }
+    }
+
+    // Get data storage statistics
+    async getDataStatistics() {
+        if (!this.isFirebaseReady || !this.currentUser) {
+            return null;
+        }
+
+        try {
+            const collections = ['gl_accounts', 'gl_journal_entries', 'gl_next_entry_id', 'gl_next_account_id'];
+            const stats = {
+                totalSize: 0,
+                collections: {},
+                lastUpdated: null
+            };
+
+            for (const collection of collections) {
+                try {
+                    const doc = await this.db.collection('users')
+                        .doc(this.currentUser.id)
+                        .collection(collection)
+                        .doc('data')
+                        .get();
+
+                    if (doc.exists) {
+                        const docData = doc.data();
+                        const size = docData.dataSize || 0;
+                        const lastUpdated = docData.lastUpdated?.toDate?.() || null;
+                        
+                        stats.collections[collection] = {
+                            size: size,
+                            lastUpdated: lastUpdated
+                        };
+                        stats.totalSize += size;
+                        
+                        if (!stats.lastUpdated || (lastUpdated && lastUpdated > stats.lastUpdated)) {
+                            stats.lastUpdated = lastUpdated;
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Could not get stats for ${collection}:`, error);
+                }
+            }
+
+            return stats;
+        } catch (error) {
+            console.error('Error getting data statistics:', error);
+            return null;
+        }
+    }
+
+    // Create data backup
+    async createDataBackup() {
+        if (!this.isFirebaseReady || !this.currentUser) {
+            return null;
+        }
+
+        try {
+            const backup = {
+                createdAt: new Date().toISOString(),
+                userId: this.currentUser.id,
+                userEmail: this.currentUser.email,
+                businessName: this.currentUser.businessName,
+                data: {}
+            };
+
+            // Backup all collections
+            const collections = ['gl_accounts', 'gl_journal_entries', 'gl_next_entry_id', 'gl_next_account_id'];
+            
+            for (const collection of collections) {
+                try {
+                    const data = await this.getUserData(collection);
+                    if (data !== null) {
+                        backup.data[collection] = data;
+                    }
+                } catch (error) {
+                    console.warn(`Could not backup ${collection}:`, error);
+                }
+            }
+
+            console.log('✅ Data backup created successfully');
+            return backup;
+        } catch (error) {
+            console.error('❌ Error creating data backup:', error);
+            return null;
         }
     }
 
@@ -428,6 +584,57 @@ class FirebaseAuthSystem {
         
         const { ...safeUser } = this.currentUser;
         return safeUser;
+    }
+
+    // Validate data integrity
+    async validateDataIntegrity() {
+        if (!this.isFirebaseReady || !this.currentUser) {
+            return { valid: false, message: 'Not authenticated' };
+        }
+
+        try {
+            const validation = {
+                valid: true,
+                errors: [],
+                warnings: [],
+                statistics: await this.getDataStatistics()
+            };
+
+            // Check if user has any data
+            const accounts = await this.getUserData('gl_accounts', []);
+            const journalEntries = await this.getUserData('gl_journal_entries', []);
+
+            if (accounts.length === 0 && journalEntries.length === 0) {
+                validation.warnings.push('No accounting data found');
+            }
+
+            // Validate account structure
+            if (accounts.length > 0) {
+                accounts.forEach((account, index) => {
+                    if (!account.id || !account.name || !account.type) {
+                        validation.errors.push(`Account ${index + 1} missing required fields`);
+                        validation.valid = false;
+                    }
+                });
+            }
+
+            // Validate journal entries
+            if (journalEntries.length > 0) {
+                journalEntries.forEach((entry, index) => {
+                    if (!entry.id || !entry.date || !entry.transactions) {
+                        validation.errors.push(`Journal entry ${index + 1} missing required fields`);
+                        validation.valid = false;
+                    }
+                });
+            }
+
+            console.log(`✅ Data integrity validation completed: ${validation.valid ? 'PASSED' : 'FAILED'}`);
+            return validation;
+
+        } catch (error) {
+            console.error('❌ Error validating data integrity:', error);
+            return { valid: false, message: 'Validation failed', error: error.message };
+        }
     }
 
     // Error message handling
@@ -560,47 +767,7 @@ class FirebaseAuthSystem {
         return this.register(demoData);
     }
 
-    // Migration utility from localStorage to Firebase
-    async migrateFromLocalStorage() {
-        if (!this.currentUser) {
-            console.warn('No user logged in for migration');
-            return false;
-        }
 
-        try {
-            // Get data from localStorage
-            const accounts = JSON.parse(localStorage.getItem('gl_accounts') || '[]');
-            const journalEntries = JSON.parse(localStorage.getItem('gl_journal_entries') || '[]');
-            const nextEntryId = parseInt(localStorage.getItem('gl_next_entry_id') || '1');
-            const nextAccountId = parseInt(localStorage.getItem('gl_next_account_id') || '1');
-
-            if (accounts.length > 0 || journalEntries.length > 0) {
-                // Migrate to Firebase
-                await this.setUserData('gl_accounts', accounts);
-                await this.setUserData('gl_journal_entries', journalEntries);
-                await this.setUserData('gl_next_entry_id', nextEntryId);
-                await this.setUserData('gl_next_account_id', nextAccountId);
-
-                console.log('✅ Data migrated from localStorage to Firebase');
-                
-                // Optionally clear localStorage after successful migration
-                if (confirm('Data migrated successfully! Clear local storage?')) {
-                    localStorage.removeItem('gl_accounts');
-                    localStorage.removeItem('gl_journal_entries');
-                    localStorage.removeItem('gl_next_entry_id');
-                    localStorage.removeItem('gl_next_account_id');
-                }
-
-                return true;
-            }
-
-            return false;
-
-        } catch (error) {
-            console.error('Migration error:', error);
-            return false;
-        }
-    }
 
     // Check if Firebase is ready
     isReady() {
@@ -749,19 +916,3 @@ function performPasswordReset() {
     }
 }
 
-// Migration function
-function migrateToFirebase() {
-    if (window.authSystem && window.authSystem.migrateFromLocalStorage) {
-        window.authSystem.migrateFromLocalStorage().then(success => {
-            if (success) {
-                showAuthMessage('Data successfully migrated to cloud database!', 'success');
-                // Reload the app to show migrated data
-                if (typeof app !== 'undefined') {
-                    app.loadUserData();
-                }
-            } else {
-                showAuthMessage('No local data found to migrate', 'info');
-            }
-        });
-    }
-}
