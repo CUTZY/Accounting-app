@@ -475,21 +475,107 @@ body {
 }
 
 .modal-content {
-  border-radius: 8px;
+  border-radius: var(--border-radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xl);
 }
 
 .modal-header {
-  padding: 15px;
-  border-bottom: 1px solid #dee2e6;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.modal-header h5 {
+  color: white;
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.modal-header .close {
+  color: white;
+  opacity: 0.8;
+  text-shadow: none;
+  font-size: 1.5rem;
+}
+
+.modal-header .close:hover {
+  color: white;
+  opacity: 1;
 }
 
 .modal-body {
-  padding: 15px;
+  padding: 1.75rem;
+  color: white;
 }
 
 .modal-footer {
-  padding: 15px;
-  border-top: 1px solid #dee2e6;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+/* Profile Modal Specific Styles */
+#userProfileModal .nav-tabs {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+#userProfileModal .nav-tabs .nav-link {
+  color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  background: transparent;
+  transition: all 0.3s ease;
+  margin-right: 4px;
+}
+
+#userProfileModal .nav-tabs .nav-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: transparent;
+}
+
+#userProfileModal .nav-tabs .nav-link.active {
+  color: white;
+  background: var(--primary-gradient);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow);
+}
+
+#userProfileModal .tab-content {
+  background: transparent;
+}
+
+#userProfileModal .alert {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  color: white;
+  margin-bottom: 1rem;
+}
+
+#userProfileModal .alert-info {
+  border-left: 4px solid var(--info);
+}
+
+#userProfileModal .alert-success {
+  border-left: 4px solid var(--success);
+}
+
+#userProfileModal .alert-danger {
+  border-left: 4px solid var(--danger);
+}
+
+#userProfileModal .alert-warning {
+  border-left: 4px solid var(--warning);
 }
 
 /* Form inputs - mobile optimized */

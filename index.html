@@ -1210,6 +1210,142 @@
             });
           }
         }
+
+        // User Profile Functions
+        function showUserProfile() {
+          if (!window.authSystem || !window.authSystem.currentUser) {
+            showAuthMessage('Please log in to access your profile', 'warning');
+            return;
+          }
+
+          const user = window.authSystem.currentUser;
+          
+          // Populate profile form with current user data
+          document.getElementById('profileFullName').value = user.fullName || '';
+          document.getElementById('profileBusinessName').value = user.businessName || '';
+          document.getElementById('profileEmail').value = user.email || '';
+          document.getElementById('profilePhone').value = user.profile?.phone || '';
+          document.getElementById('profileAddress').value = user.profile?.address || '';
+          document.getElementById('profileTaxId').value = user.profile?.taxId || '';
+          document.getElementById('profileCurrency').value = user.profile?.currency || 'USD';
+
+          // Clear any previous messages
+          const modalMessages = document.querySelector('#userProfileModal .auth-messages');
+          if (modalMessages) {
+            modalMessages.innerHTML = '';
+          }
+
+          // Show the modal
+          $('#userProfileModal').modal('show');
+        }
+
+        async function updateUserProfile() {
+          if (!window.authSystem || !window.authSystem.currentUser) {
+            showAuthMessage('Please log in to update your profile', 'danger');
+            return;
+          }
+
+          const fullName = document.getElementById('profileFullName').value.trim();
+          const businessName = document.getElementById('profileBusinessName').value.trim();
+          const phone = document.getElementById('profilePhone').value.trim();
+          const address = document.getElementById('profileAddress').value.trim();
+          const taxId = document.getElementById('profileTaxId').value.trim();
+          const currency = document.getElementById('profileCurrency').value;
+
+          if (!fullName) {
+            showAuthMessage('Full name is required', 'danger');
+            return;
+          }
+
+          const profileData = {
+            fullName: fullName,
+            businessName: businessName,
+            phone: phone,
+            address: address,
+            taxId: taxId,
+            currency: currency
+          };
+
+          try {
+            const result = await window.authSystem.updateProfile(profileData);
+            
+            if (result.success) {
+              showAuthMessage('Profile updated successfully!', 'success');
+              
+              // Update the sidebar user info display
+              window.authSystem.updateUserInfoInUI();
+              
+              // Close modal after 2 seconds
+              setTimeout(() => {
+                $('#userProfileModal').modal('hide');
+              }, 2000);
+            } else {
+              showAuthMessage(result.message || 'Failed to update profile', 'danger');
+            }
+          } catch (error) {
+            console.error('Profile update error:', error);
+            showAuthMessage('An error occurred while updating your profile', 'danger');
+          }
+        }
+
+        async function changeUserPassword() {
+          if (!window.authSystem || !window.authSystem.currentUser) {
+            showAuthMessage('Please log in to change your password', 'danger');
+            return;
+          }
+
+          const currentPassword = document.getElementById('currentPassword').value;
+          const newPassword = document.getElementById('newPassword').value;
+          const confirmPassword = document.getElementById('confirmNewPassword').value;
+
+          if (!currentPassword || !newPassword || !confirmPassword) {
+            showAuthMessage('Please fill in all password fields', 'danger');
+            return;
+          }
+
+          if (newPassword !== confirmPassword) {
+            showAuthMessage('New passwords do not match', 'danger');
+            return;
+          }
+
+          if (newPassword.length < 6) {
+            showAuthMessage('New password must be at least 6 characters long', 'danger');
+            return;
+          }
+
+          // Check password strength
+          const hasUpper = /[A-Z]/.test(newPassword);
+          const hasLower = /[a-z]/.test(newPassword);
+          const hasNumber = /\d/.test(newPassword);
+
+          if (!hasUpper || !hasLower || !hasNumber) {
+            showAuthMessage('Password must contain uppercase, lowercase, and number', 'danger');
+            return;
+          }
+
+          try {
+            const result = await window.authSystem.changePassword(currentPassword, newPassword);
+            
+            if (result.success) {
+              showAuthMessage('Password changed successfully!', 'success');
+              
+              // Clear the form
+              document.getElementById('currentPassword').value = '';
+              document.getElementById('newPassword').value = '';
+              document.getElementById('confirmNewPassword').value = '';
+              
+              // Close modal after 2 seconds
+              setTimeout(() => {
+                $('#userProfileModal').modal('hide');
+              }, 2000);
+            } else {
+              showAuthMessage(result.message || 'Failed to change password', 'danger');
+            }
+          } catch (error) {
+            console.error('Password change error:', error);
+            showAuthMessage('An error occurred while changing your password', 'danger');
+          }
+        }
     </script>
     
 <script src="app.js"></script>
